@@ -9,5 +9,4 @@ class RepitMaApplicationTests {
     @Test
     fun contextLoads() {
     }
-
 }

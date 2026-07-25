@@ -1,0 +1,10 @@
+.git
+.gradle
+.idea
+.agents
+.pnpm-store
+**/build
+frontend/node_modules
+frontend/dist
+*.iml
+repit-ma.db
