@@ -1,16 +1,20 @@
 # Repit MA
 
-Веб-приложение для совместной работы репетитора и учеников: расписание занятий, учебный прогресс, домашние задания, материалы и учет оплат.
+Веб-приложение для взаимодействия преподавателей и учеников.
 
-Проект находится на ранней стадии. Сейчас реализована регистрация пользователей по логину и паролю с хранением данных в SQLite.
+## Технологии
 
-## Стек
-
-Kotlin, Spring Boot, Spring Security, MyBatis, Liquibase, SQLite, TypeScript и Vite.
+- JDK 21, Kotlin и Spring Boot;
+- Spring Security;
+- MyBatis и Liquibase;
+- SQLite;
+- TypeScript, Vite и pnpm;
+- Gradle Wrapper;
+- Docker и Docker Compose.
 
 ## Локальный запуск
 
-Потребуются JDK 21, Node.js 22 и pnpm. Gradle устанавливать отдельно не нужно.
+Потребуются JDK 21, Node.js 22 и pnpm 11.
 
 Запустите backend из корня проекта:
 
@@ -18,15 +22,19 @@ Kotlin, Spring Boot, Spring Security, MyBatis, Liquibase, SQLite, TypeScript и 
 .\gradlew.bat :app:bootRun
 ```
 
-Затем запустите frontend в отдельном терминале:
+В отдельном терминале установите зависимости и запустите frontend:
 
 ```powershell
 cd frontend
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Frontend будет доступен по адресу `http://localhost:5173`, backend — `http://localhost:8080`. Локальная база данных создается в файле `repit-ma.db`.
+Frontend доступен по адресу `http://localhost:5173`, backend — `http://localhost:8080`. Vite перенаправляет запросы `/api` на backend.
+
+По умолчанию SQLite хранится в файле `repit-ma.db` в корне проекта. Путь можно изменить переменной окружения `REPIT_MA_DATABASE_PATH`.
+
+При первой миграции создаётся пользователь `admin` с ролью `ADMIN`. Хеш его пароля задан в Liquibase changeset.
 
 ## Запуск в Docker
 
@@ -34,9 +42,9 @@ Frontend будет доступен по адресу `http://localhost:5173`, 
 docker compose up --build
 ```
 
-Приложение будет доступно по адресу `http://localhost:8080`. Данные SQLite сохраняются в каталоге `data`.
+Приложение доступно по адресу `http://localhost:8080`. База SQLite сохраняется в каталоге `data`.
 
-Остановка:
+Остановка контейнера:
 
 ```bash
 docker compose down
@@ -44,8 +52,15 @@ docker compose down
 
 ## Проверка
 
+Backend-тесты:
+
 ```powershell
 .\gradlew.bat test
+```
+
+Проверка типов и production-сборка frontend:
+
+```powershell
 cd frontend
 pnpm build
 ```

@@ -14,6 +14,8 @@ COPY gradlew settings.gradle build.gradle ./
 COPY gradle/ gradle/
 COPY app/ app/
 COPY auth/ auth/
+COPY users/ users/
+COPY courses/ courses/
 COPY --from=frontend /workspace/frontend/dist/ app/src/main/resources/static/
 RUN --mount=type=cache,target=/root/.gradle \
     chmod +x gradlew && ./gradlew :app:bootJar --no-daemon
