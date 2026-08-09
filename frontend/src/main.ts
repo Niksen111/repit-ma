@@ -12,8 +12,9 @@ function header(profile: Profile | null): string {
   const canRegister = profile?.role === 'ADMIN' || profile?.role === 'TEACHER'
   const registrationLink = canRegister ? '<a href="/register">Регистрация</a>' : ''
   const studentsLink = profile?.role === 'TEACHER' ? '<a href="/students">Ученики</a>' : ''
+  const learningLink = profile?.role === 'STUDENT' ? '<a href="/learning">Обучение</a>' : ''
   const links = profile
-    ? `<a href="/">Главная</a>${studentsLink}${registrationLink}<a href="/account">Аккаунт</a><button id="logout" type="button">Выйти</button>`
+    ? `<a href="/">Главная</a>${studentsLink}${learningLink}${registrationLink}<a href="/account">Аккаунт</a><button id="logout" type="button">Выйти</button>`
     : '<a href="/">Главная</a><a class="login-link" href="/login">Войти</a>'
   return `<header class="site-header"><a class="logo" href="/">repit<span>ma</span></a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-navigation" aria-label="Открыть меню"><span></span><span></span><span></span></button><nav id="main-navigation" aria-label="Основная навигация">${links}</nav></header>`
 }
@@ -222,6 +223,12 @@ function courseContact(course: CourseSummary): string {
   return '<span class="empty-value">Контакт не указан</span>'
 }
 
+function teacherCourseContact(course: CourseSummary): string {
+  if (course.teacherTelegram) return `Telegram: ${escapeHtml(course.teacherTelegram)}`
+  if (course.teacherVk) return `ВКонтакте: ${escapeHtml(course.teacherVk)}`
+  return '<span class="empty-value">Контакт не указан</span>'
+}
+
 function renderStudents(profile: Profile, courses: CourseSummary[]): void {
   document.title = 'Ученики — Repitma'
   const rows = courses.length
@@ -232,8 +239,24 @@ function renderStudents(profile: Profile, courses: CourseSummary[]): void {
 }
 
 function renderCourse(profile: Profile, course: CourseSummary): void {
+  if (profile.role === 'STUDENT') {
+    document.title = `Обучение — ${course.teacherName ?? 'преподаватель'}`
+    const teacherContact = teacherCourseContact(course)
+    app.innerHTML = `${header(profile)}<main><section class="course-page"><a class="back-link" href="/learning">← Все курсы</a><p class="eyebrow">Курс ${escapeHtml(course.academicYear)}</p><h1>Обучение</h1><div class="course-layout"><dl><div><dt>Имя преподавателя</dt><dd>${displayValue(course.teacherName)}</dd></div><div><dt>Контакт</dt><dd>${teacherContact}</dd></div></dl><div class="course-placeholder"><span>Курс</span><h2>Материалы появятся позже</h2><p>Здесь будут программа, занятия, домашние задания и ваш прогресс.</p></div></div></section></main>${footer()}`
+    bindHeader()
+    return
+  }
   document.title = `${course.name ?? course.username} — курс`
   app.innerHTML = `${header(profile)}<main><section class="course-page"><a class="back-link" href="/students">← Все ученики</a><p class="eyebrow">Курс ${escapeHtml(course.academicYear)}</p><h1>${escapeHtml(course.name ?? course.username)}</h1><div class="course-layout"><dl><div><dt>Логин</dt><dd>${escapeHtml(course.username)}</dd></div><div><dt>Имя</dt><dd>${displayValue(course.name)}</dd></div><div><dt>Город</dt><dd>${displayValue(course.city)}</dd></div><div><dt>Класс</dt><dd>${course.grade ? `${course.grade} класс` : '<span class="empty-value">Не указано</span>'}</dd></div><div><dt>Контакт</dt><dd>${courseContact(course)}</dd></div></dl><div class="course-placeholder"><span>Курс</span><h2>Материалы появятся позже</h2><p>Здесь будут программа, занятия, домашние задания и прогресс ученика.</p></div></div></section></main>${footer()}`
+  bindHeader()
+}
+
+function renderLearning(profile: Profile, courses: CourseSummary[]): void {
+  document.title = 'Обучение — Repitma'
+  const content = courses.length === 0
+    ? '<div class="empty-list"><h2>Активных курсов нет</h2><p>Когда преподаватель назначит вам курс, он появится здесь.</p></div>'
+    : courses.map((course) => `<a class="student-row" href="/courses/${course.id}"><span><strong>${escapeHtml(course.teacherName ?? 'Преподаватель')}</strong><small>Курс ${escapeHtml(course.academicYear)}</small></span><span>${teacherCourseContact(course)}</span><span class="row-arrow">→</span></a>`).join('')
+  app.innerHTML = `${header(profile)}<main><section class="students-page"><p class="eyebrow">Текущий учебный год</p><h1>Обучение</h1><div class="student-list learning-list">${content}</div></section></main>${footer()}`
   bindHeader()
 }
 
@@ -282,15 +305,28 @@ async function start(): Promise<void> {
     renderStudents(profile, courses)
     return
   }
+  if (path === '/learning') {
+    if (!profile || profile.role !== 'STUDENT') {
+      window.location.href = profile ? '/account' : '/login'
+      return
+    }
+    const courses = await getCourses().catch(() => [])
+    if (courses.length === 1) {
+      window.location.href = `/courses/${courses[0].id}`
+      return
+    }
+    renderLearning(profile, courses)
+    return
+  }
   const courseMatch = path.match(/^\/courses\/(\d+)$/)
   if (courseMatch) {
-    if (!profile || profile.role !== 'TEACHER') {
+    if (!profile || (profile.role !== 'TEACHER' && profile.role !== 'STUDENT')) {
       window.location.href = profile ? '/account' : '/login'
       return
     }
     const course = await getCourse(Number(courseMatch[1])).catch(() => null)
     if (!course) {
-      window.location.href = '/students'
+      window.location.href = profile.role === 'STUDENT' ? '/learning' : '/students'
       return
     }
     renderCourse(profile, course)

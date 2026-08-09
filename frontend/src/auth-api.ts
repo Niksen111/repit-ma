@@ -31,6 +31,11 @@ export interface CourseSummary {
   id: number
   academicYear: string
   teacherId: number
+  teacherUsername: string
+  teacherName: string | null
+  teacherCity: string | null
+  teacherTelegram: string | null
+  teacherVk: string | null
   studentId: number
   username: string
   name: string | null

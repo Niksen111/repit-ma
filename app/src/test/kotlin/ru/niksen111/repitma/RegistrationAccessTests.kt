@@ -85,8 +85,20 @@ class RegistrationAccessTests(
             username = "teacher-course-test",
             passwordHash = "unused-in-mock-auth",
             role = UserRole.TEACHER,
+            name = "Мария Александровна",
+            telegram = "@math_teacher",
+            city = "Санкт-Петербург",
         )
         userMapper.insert(teacher)
+        userMapper.updateProfile(
+            id = requireNotNull(teacher.id),
+            name = teacher.name,
+            telegram = teacher.telegram,
+            city = teacher.city,
+            vk = teacher.vk,
+            grade = null,
+            profileConsentAt = "2026-08-09T00:00:00Z",
+        )
 
         mockMvc.post("/api/auth/register") {
             with(user(teacher.username).roles("TEACHER"))
@@ -101,7 +113,18 @@ class RegistrationAccessTests(
         }.andExpect {
             status { isOk() }
             jsonPath("$[0].username") { value("student-course-test") }
+            jsonPath("$[0].teacherUsername") { value("teacher-course-test") }
             jsonPath("$[0].academicYear") { value("2025/26") }
+        }
+
+        mockMvc.get("/api/courses") {
+            with(user("student-course-test").roles("STUDENT"))
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$[0].teacherUsername") { value("teacher-course-test") }
+            jsonPath("$[0].teacherName") { value("Мария Александровна") }
+            jsonPath("$[0].teacherCity") { value("Санкт-Петербург") }
+            jsonPath("$[0].teacherTelegram") { value("@math_teacher") }
         }
     }
 

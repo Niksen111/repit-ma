@@ -7,6 +7,11 @@
         <id property="id" column="course_id"/>
         <result property="academicYear" column="academic_year"/>
         <result property="teacherId" column="teacher_id"/>
+        <result property="teacherUsername" column="teacher_username"/>
+        <result property="teacherName" column="teacher_name"/>
+        <result property="teacherCity" column="teacher_city"/>
+        <result property="teacherTelegram" column="teacher_telegram"/>
+        <result property="teacherVk" column="teacher_vk"/>
         <result property="studentId" column="student_id"/>
         <result property="username" column="username"/>
         <result property="name" column="name"/>
@@ -22,10 +27,14 @@
     </insert>
 
     <sql id="courseSelect">
-        SELECT c.id AS course_id, c.academic_year, c.teacher_id, u.id AS student_id,
+        SELECT c.id AS course_id, c.academic_year, c.teacher_id,
+               t.username AS teacher_username, t.name AS teacher_name,
+               t.city AS teacher_city, t.telegram AS teacher_telegram, t.vk AS teacher_vk,
+               u.id AS student_id,
                u.username, u.name, u.city, u.telegram, u.vk, u.grade
         FROM courses c
         JOIN users u ON u.id = c.student_id
+        JOIN users t ON t.id = c.teacher_id
     </sql>
 
     <select id="findAll" resultMap="course">
@@ -36,7 +45,8 @@
     <select id="findForUser" resultMap="course">
         <include refid="courseSelect"/>
         WHERE c.teacher_id = #{userId} OR c.student_id = #{userId}
-        ORDER BY COALESCE(u.name, u.username) COLLATE NOCASE
+        ORDER BY COALESCE(u.name, u.username) COLLATE NOCASE,
+                 COALESCE(t.name, t.username) COLLATE NOCASE
     </select>
 
     <select id="findById" resultMap="course">
