@@ -4,6 +4,21 @@ export interface Profile {
   id: number
   username: string
   role: UserRole
+  name: string | null
+  telegram: string | null
+  city: string | null
+  vk: string | null
+  grade: number | null
+  personalDataConsentGiven: boolean
+}
+
+export interface ProfileUpdate {
+  name: string
+  telegram: string
+  city: string
+  vk: string
+  grade: number | null
+  consent: boolean
 }
 
 interface ApiError {
@@ -57,5 +72,17 @@ export async function getProfile(): Promise<Profile | null> {
     return null
   }
   if (!response.ok) throw new Error('Не удалось загрузить профиль')
+  return response.json() as Promise<Profile>
+}
+
+export async function updateProfile(update: ProfileUpdate): Promise<Profile> {
+  const authorization = getAuthorization()
+  if (!authorization) throw new Error('Войдите, чтобы изменить профиль')
+  const response = await fetch('/api/profile', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: authorization },
+    body: JSON.stringify(update),
+  })
+  if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось сохранить профиль'))
   return response.json() as Promise<Profile>
 }

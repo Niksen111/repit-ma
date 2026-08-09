@@ -20,7 +20,7 @@ class AuthConfiguration {
         .csrf { it.disable() }
         .authorizeHttpRequests {
             it.requestMatchers(
-                "/", "/index.html", "/login", "/register", "/account",
+                "/", "/index.html", "/login", "/register", "/account", "/privacy",
                 "/assets/**", "/error",
             ).permitAll()
                 .requestMatchers("/api/auth/register").hasRole("ADMIN")

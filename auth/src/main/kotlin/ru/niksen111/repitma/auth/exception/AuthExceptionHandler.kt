@@ -11,6 +11,11 @@ import ru.niksen111.repitma.auth.dto.ApiErrorCode
 @RestControllerAdvice
 class AuthExceptionHandler {
 
+    @ExceptionHandler(AuthValidationException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun authValidationFailed(exception: AuthValidationException) =
+        ApiError(code = ApiErrorCode.VALIDATION_FAILED, message = exception.message.orEmpty())
+
     @ExceptionHandler(UsernameAlreadyExistsException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
     fun usernameAlreadyExists(exception: UsernameAlreadyExistsException) =

@@ -1,22 +1,32 @@
 package ru.niksen111.repitma.auth.controller
 
+import jakarta.validation.Valid
 import org.springframework.security.core.Authentication
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 import ru.niksen111.repitma.auth.dto.ProfileResponse
-import ru.niksen111.repitma.auth.mapper.UserMapper
+import ru.niksen111.repitma.auth.dto.ProfileUpdateRequest
+import ru.niksen111.repitma.auth.service.ProfileService
 
 @RestController
 @RequestMapping("/api/profile")
 class ProfileController(
-    private val userMapper: UserMapper,
+    private val profileService: ProfileService,
 ) {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     fun profile(authentication: Authentication): ProfileResponse {
-        val account = requireNotNull(userMapper.findByUsername(authentication.name))
-        return ProfileResponse(requireNotNull(account.id), account.username, account.role)
+        return profileService.get(authentication.name)
     }
+
+    @PutMapping
+    @PreAuthorize("isAuthenticated()")
+    fun update(
+        authentication: Authentication,
+        @Valid @RequestBody request: ProfileUpdateRequest,
+    ): ProfileResponse = profileService.update(authentication.name, request)
 }

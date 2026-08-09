@@ -46,4 +46,14 @@ private class FakeUserMapper : UserMapper {
     }
 
     override fun findByUsername(username: String): UserAccount? = users[username.lowercase()]
+
+    override fun updateProfile(
+        id: Long,
+        name: String?,
+        telegram: String?,
+        city: String?,
+        vk: String?,
+        grade: Int?,
+        profileConsentAt: String?,
+    ): Int = error("Not used in registration tests")
 }

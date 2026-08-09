@@ -10,6 +10,7 @@ import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequ
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import org.springframework.test.web.servlet.put
 
 @SpringBootTest(properties = ["spring.datasource.url=jdbc:sqlite:file:registration-access-tests?mode=memory&cache=shared"])
 @AutoConfigureMockMvc
@@ -60,6 +61,46 @@ class RegistrationAccessTests(
         }
     }
 
+    @Test
+    @WithMockUser(username = "admin", roles = ["ADMIN"])
+    fun `personal data requires consent`() {
+        mockMvc.put("/api/profile") {
+            contentType = MediaType.APPLICATION_JSON
+            content = profileJson(consent = false)
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.code") { value("validation_failed") }
+        }
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = ["ADMIN"])
+    fun `profile is saved after consent`() {
+        mockMvc.put("/api/profile") {
+            contentType = MediaType.APPLICATION_JSON
+            content = profileJson(consent = true)
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.name") { value("Анна") }
+            jsonPath("$.telegram") { value("@anna_teacher") }
+            jsonPath("$.city") { value("Москва") }
+            jsonPath("$.vk") { doesNotExist() }
+            jsonPath("$.grade") { value(8) }
+        }
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = ["ADMIN"])
+    fun `telegram and vk cannot be saved together`() {
+        mockMvc.put("/api/profile") {
+            contentType = MediaType.APPLICATION_JSON
+            content = profileJson(consent = true, vk = "anna_school")
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.code") { value("validation_failed") }
+        }
+    }
+
     private fun registrationJson(role: String, username: String = "new-user") =
         """
         {
@@ -68,4 +109,18 @@ class RegistrationAccessTests(
           "role": "$role"
         }
         """.trimIndent()
+
+    private fun profileJson(consent: Boolean, vk: String? = null): String {
+        val vkField = vk?.let { "\"vk\": \"$it\"," }.orEmpty()
+        return """
+        {
+          "name": "Анна",
+          "telegram": "@anna_teacher",
+          $vkField
+          "city": "Москва",
+          "grade": 8,
+          "consent": $consent
+        }
+        """.trimIndent()
+    }
 }
