@@ -21,6 +21,25 @@ export interface ProfileUpdate {
   consent: boolean
 }
 
+export interface TeacherSummary {
+  id: number
+  username: string
+  name: string | null
+}
+
+export interface CourseSummary {
+  id: number
+  academicYear: string
+  teacherId: number
+  studentId: number
+  username: string
+  name: string | null
+  city: string | null
+  telegram: string | null
+  vk: string | null
+  grade: number | null
+}
+
 interface ApiError {
   message?: string
   fields?: Record<string, string>
@@ -42,17 +61,42 @@ async function errorMessage(response: Response, fallback: string): Promise<strin
   return fieldMessage || error.message || fallback
 }
 
-export async function register(username: string, password: string, role: UserRole): Promise<Profile> {
+export async function register(
+  username: string,
+  password: string,
+  role: UserRole,
+  teacherId: number | null = null,
+): Promise<Profile> {
   const authorization = getAuthorization()
   if (!authorization) throw new Error('Для регистрации пользователя войдите как администратор')
   const response = await fetch('/api/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: authorization },
-    body: JSON.stringify({ username, password, role }),
+    body: JSON.stringify({ username, password, role, teacherId }),
   })
-  if (response.status === 403) throw new Error('Регистрировать пользователей может только администратор')
+  if (response.status === 403) throw new Error('Недостаточно прав для регистрации пользователя')
   if (!response.ok) throw new Error(await errorMessage(response, 'Не удалось зарегистрироваться'))
   return response.json() as Promise<Profile>
+}
+
+async function authenticatedGet<T>(url: string, fallback: string): Promise<T> {
+  const authorization = getAuthorization()
+  if (!authorization) throw new Error('Необходимо войти в аккаунт')
+  const response = await fetch(url, { headers: { Authorization: authorization } })
+  if (!response.ok) throw new Error(await errorMessage(response, fallback))
+  return response.json() as Promise<T>
+}
+
+export function getTeachers(): Promise<TeacherSummary[]> {
+  return authenticatedGet('/api/teachers', 'Не удалось загрузить преподавателей')
+}
+
+export function getCourses(): Promise<CourseSummary[]> {
+  return authenticatedGet('/api/courses', 'Не удалось загрузить курсы')
+}
+
+export function getCourse(courseId: number): Promise<CourseSummary> {
+  return authenticatedGet(`/api/courses/${courseId}`, 'Не удалось загрузить курс')
 }
 
 export async function login(username: string, password: string): Promise<Profile> {

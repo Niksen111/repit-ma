@@ -5,7 +5,7 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
-import ru.niksen111.repitma.auth.mapper.UserMapper
+import ru.niksen111.repitma.users.mapper.UserMapper
 
 @Service
 class AccountUserDetailsService(

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.niksen111.repitma.courses.mapper.CourseMapper">
+    <resultMap id="course" type="ru.niksen111.repitma.courses.dto.CourseResponse">
+        <id property="id" column="course_id"/>
+        <result property="academicYear" column="academic_year"/>
+        <result property="teacherId" column="teacher_id"/>
+        <result property="studentId" column="student_id"/>
+        <result property="username" column="username"/>
+        <result property="name" column="name"/>
+        <result property="city" column="city"/>
+        <result property="telegram" column="telegram"/>
+        <result property="vk" column="vk"/>
+        <result property="grade" column="grade"/>
+    </resultMap>
+
+    <insert id="insert">
+        INSERT INTO courses (teacher_id, student_id, academic_year)
+        VALUES (#{teacherId}, #{studentId}, #{academicYear})
+    </insert>
+
+    <sql id="courseSelect">
+        SELECT c.id AS course_id, c.academic_year, c.teacher_id, u.id AS student_id,
+               u.username, u.name, u.city, u.telegram, u.vk, u.grade
+        FROM courses c
+        JOIN users u ON u.id = c.student_id
+    </sql>
+
+    <select id="findAll" resultMap="course">
+        <include refid="courseSelect"/>
+        ORDER BY COALESCE(u.name, u.username) COLLATE NOCASE
+    </select>
+
+    <select id="findForUser" resultMap="course">
+        <include refid="courseSelect"/>
+        WHERE c.teacher_id = #{userId} OR c.student_id = #{userId}
+        ORDER BY COALESCE(u.name, u.username) COLLATE NOCASE
+    </select>
+
+    <select id="findById" resultMap="course">
+        <include refid="courseSelect"/>
+        WHERE c.id = #{courseId}
+    </select>
+</mapper>

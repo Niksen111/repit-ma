@@ -7,15 +7,22 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.put
+import ru.niksen111.repitma.users.entity.UserAccount
+import ru.niksen111.repitma.users.entity.UserRole
+import ru.niksen111.repitma.users.mapper.UserMapper
+import ru.niksen111.repitma.courses.mapper.CourseMapper
 
 @SpringBootTest(properties = ["spring.datasource.url=jdbc:sqlite:file:registration-access-tests?mode=memory&cache=shared"])
 @AutoConfigureMockMvc
 class RegistrationAccessTests(
     @Autowired private val mockMvc: MockMvc,
+    @Autowired private val userMapper: UserMapper,
+    @Autowired private val courseMapper: CourseMapper,
 ) {
     @Test
     fun `invalid password does not trigger browser login dialog`() {
@@ -50,7 +57,7 @@ class RegistrationAccessTests(
     }
 
     @Test
-    @WithMockUser(roles = ["ADMIN"])
+    @WithMockUser(username = "admin", roles = ["ADMIN"])
     fun `administrator chooses the new user role`() {
         mockMvc.post("/api/auth/register") {
             contentType = MediaType.APPLICATION_JSON
@@ -58,6 +65,58 @@ class RegistrationAccessTests(
         }.andExpect {
             status { isCreated() }
             jsonPath("$.role") { value("TEACHER") }
+        }
+    }
+
+    @Test
+    @WithMockUser(roles = ["ADMIN"])
+    fun `administrator sees teacher logins`() {
+        testUser("teacher-directory-login", UserRole.TEACHER)
+
+        mockMvc.get("/api/teachers").andExpect {
+            status { isOk() }
+            jsonPath("$[?(@.username == 'teacher-directory-login')]") { exists() }
+        }
+    }
+
+    @Test
+    fun `teacher registers a student on own course`() {
+        val teacher = UserAccount(
+            username = "teacher-course-test",
+            passwordHash = "unused-in-mock-auth",
+            role = UserRole.TEACHER,
+        )
+        userMapper.insert(teacher)
+
+        mockMvc.post("/api/auth/register") {
+            with(user(teacher.username).roles("TEACHER"))
+            contentType = MediaType.APPLICATION_JSON
+            content = registrationJson("STUDENT", "student-course-test")
+        }.andExpect {
+            status { isCreated() }
+        }
+
+        mockMvc.get("/api/courses") {
+            with(user(teacher.username).roles("TEACHER"))
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$[0].username") { value("student-course-test") }
+            jsonPath("$[0].academicYear") { value("2025/26") }
+        }
+    }
+
+    @Test
+    fun `teacher cannot open another teacher course`() {
+        val owner = testUser("course-owner", UserRole.TEACHER)
+        val stranger = testUser("course-stranger", UserRole.TEACHER)
+        val student = testUser("course-student", UserRole.STUDENT)
+        courseMapper.insert(requireNotNull(owner.id), requireNotNull(student.id), "2025/26")
+        val courseId = courseMapper.findForUser(requireNotNull(owner.id)).single().id
+
+        mockMvc.get("/api/courses/$courseId") {
+            with(user(stranger.username).roles("TEACHER"))
+        }.andExpect {
+            status { isNotFound() }
         }
     }
 
@@ -109,6 +168,11 @@ class RegistrationAccessTests(
           "role": "$role"
         }
         """.trimIndent()
+
+    private fun testUser(username: String, role: UserRole): UserAccount =
+        UserAccount(username = username, passwordHash = "unused-in-mock-auth", role = role).also {
+            userMapper.insert(it)
+        }
 
     private fun profileJson(consent: Boolean, vk: String? = null): String {
         val vkField = vk?.let { "\"vk\": \"$it\"," }.orEmpty()

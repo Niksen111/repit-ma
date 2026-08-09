@@ -67,12 +67,17 @@ footer p { margin: 0; font-size: 13px; opacity: .6; }
 dl { max-width: 580px; margin: 48px 0 0; }
 dl div { display: grid; grid-template-columns: 1fr 2fr; padding: 20px 0; border-bottom: 1px solid #38453e55; }
 dt { opacity: .6; } dd { margin: 0; font-weight: 700; }
-.auth-card { max-width: 660px; }
+.auth-card { min-width: 0; max-width: 660px; }
 .profile-form { max-width: 660px; padding-top: 54px; }
 .profile-form h2, .danger-zone h2, .privacy h2 { margin: 0; font-family: Unbounded, Arial, sans-serif; }
 .form-hint { margin: -12px 0 4px; opacity: .65; }
 form { display: grid; gap: 22px; margin-top: 42px; }
 label { display: grid; gap: 8px; font-size: 14px; font-weight: 700; }
+label[hidden] { display: none !important; }
+label small { font-weight: 400; line-height: 1.5; opacity: .62; }
+.registration-title { max-width: none; font-size: clamp(34px, 4.7vw, 58px) !important; }
+.registration-title span { display: block; }
+.fixed-role { margin: 0; padding: 14px 16px; border-radius: 10px; background: #2d604e10; }
 input, select { width: 100%; padding: 15px 16px; border: 1px solid #38453e66; border-radius: 10px; background: #fffdf5; font: inherit; }
 .primary-button { min-height: 44px; justify-self: start; padding: 13px 22px; border: 0; border-radius: 99px; background: var(--accent); color: white; font: 700 14px Manrope, Arial, sans-serif; cursor: pointer; }
 .primary-button:disabled { opacity: .55; }
@@ -101,6 +106,23 @@ input, select { width: 100%; padding: 15px 16px; border: 1px solid #38453e66; bo
 .privacy h2 { margin-top: 46px; font-size: 21px; }
 .privacy p { line-height: 1.75; }
 .policy-date { opacity: .6; }
+.students-page, .course-page { align-content: start; width: 100%; padding-top: 80px; padding-bottom: 100px; }
+.students-page h1, .course-page h1 { font-size: clamp(40px, 6vw, 68px); }
+.student-list { display: grid; gap: 10px; margin-top: 44px; }
+.student-row { display: grid; grid-template-columns: 1.2fr 1fr 1.4fr auto; align-items: center; gap: 20px; min-height: 76px; padding: 15px 20px; border: 1px solid #38453e33; border-radius: 14px; background: #fffdf5; transition: border-color .15s, transform .15s; }
+.student-row:hover { border-color: #2d604e88; transform: translateY(-1px); }
+.student-row > span:first-child { display: grid; gap: 4px; }
+.student-row small { font-size: 12px; opacity: .58; }
+.row-arrow { font-size: 22px; }
+.empty-list { max-width: 580px; padding: 34px; border-radius: 18px; background: #edf1e9; }
+.empty-list h2 { margin-top: 0; }.empty-list p { margin-bottom: 24px; line-height: 1.6; }
+.back-link { display: inline-block; margin-bottom: 42px; font-weight: 700; }
+.course-layout { display: grid; grid-template-columns: .8fr 1.2fr; gap: 44px; align-items: start; margin-top: 46px; }
+.course-layout dl { margin: 0; }
+.course-placeholder { min-height: 280px; padding: 38px; border: 1px dashed #38453e66; border-radius: 20px; background: #edf1e966; }
+.course-placeholder > span { font-size: 11px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; opacity: .55; }
+.course-placeholder h2 { margin: 54px 0 12px; font-family: Unbounded, Arial, sans-serif; font-size: 24px; }
+.course-placeholder p { line-height: 1.6; opacity: .65; }
 @media (max-width: 760px) {
   .site-header { min-height: 68px; gap: 18px; position: relative; z-index: 10; }
   .menu-toggle { display: block; }
@@ -116,6 +138,11 @@ input, select { width: 100%; padding: 15px 16px; border: 1px solid #38453e66; bo
   .hero { min-height: 500px; }
   h1 { font-size: clamp(38px, 11vw, 58px); line-height: 1.08; }
   .account h1, .auth-card h1, .privacy h1 { font-size: clamp(34px, 9vw, 50px); }
+  .students-page, .course-page { padding-top: 56px; padding-bottom: 72px; }
+  .student-row { grid-template-columns: 1fr auto; gap: 10px 16px; }
+  .student-row > span:nth-child(2), .student-row > span:nth-child(3) { grid-column: 1; }
+  .row-arrow { grid-column: 2; grid-row: 1 / 4; }
+  .course-layout { grid-template-columns: 1fr; gap: 28px; }
   .teacher-hero { grid-template-columns: 1fr; gap: 38px; padding-top: 52px; padding-bottom: 68px; }
   .teacher-intro h1 { max-width: 100%; font-size: clamp(31px, 9.2vw, 48px); }
   .teacher-photo { width: min(82vw, 320px); justify-self: center; }
@@ -127,6 +154,8 @@ input, select { width: 100%; padding: 15px 16px; border: 1px solid #38453e66; bo
   .teacher-approach .eyebrow { grid-column: auto; margin-bottom: 0; }
 }
 @media (max-width: 560px) {
+  .registration-title { max-width: 100%; font-size: clamp(25px, 7.8vw, 38px) !important; white-space: normal; overflow-wrap: normal; }
+  .registration-title span { display: block; }
   footer, .footer-meta { align-items: flex-start; flex-direction: column; justify-content: center; }
   footer { padding-top: 24px; padding-bottom: 24px; }
   .contact-fields { grid-template-columns: 1fr; }

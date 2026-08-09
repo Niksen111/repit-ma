@@ -1,5 +1,5 @@
 import './styles.css'
-import { getProfile, login, logout, register, updateProfile, type Profile, type UserRole } from './auth-api.ts'
+import { getCourse, getCourses, getProfile, getTeachers, login, logout, register, updateProfile, type CourseSummary, type Profile, type TeacherSummary, type UserRole } from './auth-api.ts'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 const roleNames: Record<UserRole, string> = {
@@ -9,9 +9,11 @@ const roleNames: Record<UserRole, string> = {
 }
 
 function header(profile: Profile | null): string {
-  const registrationLink = profile?.role === 'ADMIN' ? '<a href="/register">Регистрация</a>' : ''
+  const canRegister = profile?.role === 'ADMIN' || profile?.role === 'TEACHER'
+  const registrationLink = canRegister ? '<a href="/register">Регистрация</a>' : ''
+  const studentsLink = profile?.role === 'TEACHER' ? '<a href="/students">Ученики</a>' : ''
   const links = profile
-    ? `<a href="/">Главная</a>${registrationLink}<a href="/account">Аккаунт</a><button id="logout" type="button">Выйти</button>`
+    ? `<a href="/">Главная</a>${studentsLink}${registrationLink}<a href="/account">Аккаунт</a><button id="logout" type="button">Выйти</button>`
     : '<a href="/">Главная</a><a class="login-link" href="/login">Войти</a>'
   return `<header class="site-header"><a class="logo" href="/">repit<span>ma</span></a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-navigation" aria-label="Открыть меню"><span></span><span></span><span></span></button><nav id="main-navigation" aria-label="Основная навигация">${links}</nav></header>`
 }
@@ -69,6 +71,7 @@ function renderAccount(profile: Profile, saved = false): void {
   const contact = contactDetails(profile)
   const contactLabel = contact.type === 'telegram' ? 'Telegram' : 'ВКонтакте'
   app.innerHTML = `${header(profile)}<main><section class="account"><p class="eyebrow">Профиль</p><h1>${escapeHtml(profile.username)}</h1>${saved ? '<p class="status success account-message">Профиль сохранён!</p>' : ''}<dl><div><dt>Логин</dt><dd>${escapeHtml(profile.username)}</dd></div><div><dt>Роль</dt><dd>${roleNames[profile.role]}</dd></div><div><dt>Имя</dt><dd>${displayValue(profile.name)}</dd></div><div><dt>${contactLabel}</dt><dd>${displayValue(contact.value)}</dd></div><div><dt>Город</dt><dd>${displayValue(profile.city)}</dd></div><div><dt>Класс</dt><dd>${profile.grade ? `${profile.grade} класс` : '<span class="empty-value">Не указано</span>'}</dd></div></dl><button id="edit-profile" class="primary-button account-action" type="button">Редактировать</button><section class="danger-zone"><h2>Удаление данных</h2><p>Здесь можно будет отправить оператору запрос на удаление персональных данных.</p><button id="deletion-request" class="danger-button" type="button">Запрос на удаление данных</button><p id="deletion-message" class="status" role="status"></p></section></section></main>${footer()}`
+  if (profile.role !== 'STUDENT') document.querySelector('.account dl')?.lastElementChild?.remove()
   bindHeader()
   document.querySelector('#edit-profile')!.addEventListener('click', () => renderAccountEditor(profile))
   document.querySelector('#deletion-request')!.addEventListener('click', () => {
@@ -87,6 +90,7 @@ function renderAccountEditor(profile: Profile): void {
     ? 'Согласие на обработку персональных данных дано.'
     : 'Я согласен на обработку указанных персональных данных.'
   app.innerHTML = `${header(profile)}<main><section class="account"><p class="eyebrow">Редактирование</p><h1>Личные данные</h1><form id="profile-form" class="profile-form"><p class="form-hint">Все поля необязательны.</p><label>Имя<input name="name" maxlength="100" value="${escapeHtml(profile.name)}" placeholder="Как к вам обращаться"></label><div class="contact-fields"><label>Способ связи<select name="contactType"><option value="telegram" ${contact.type === 'telegram' ? 'selected' : ''}>Telegram</option><option value="vk" ${contact.type === 'vk' ? 'selected' : ''}>ВКонтакте</option></select></label><label>Ник<input name="contact" maxlength="64" value="${escapeHtml(contact.value)}" placeholder="${contact.type === 'telegram' ? '@username' : 'username или id12345'}"></label></div><label>Город<input name="city" maxlength="100" value="${escapeHtml(profile.city)}" placeholder="Например, Москва"></label><label>Класс<select name="grade"><option value="">Не указан</option>${gradeOptions(profile.grade)}</select></label><label class="consent ${profile.personalDataConsentGiven ? 'consent-given' : ''}">${consentInput}<span>${consentText}<small>Мы храним данные для отображения и работы вашего профиля. Подробнее — в <a href="/privacy">политике конфиденциальности</a>.</small></span></label><div class="form-actions"><button class="primary-button" type="submit">Сохранить</button><button id="cancel-edit" class="secondary-button" type="button">Отмена</button></div><p id="profile-message" class="status" role="status"></p></form></section></main>${footer()}`
+  if (profile.role !== 'STUDENT') document.querySelector('select[name="grade"]')?.closest('label')?.remove()
   bindHeader()
   document.querySelector('#cancel-edit')!.addEventListener('click', () => renderAccount(profile))
   const contactType = document.querySelector<HTMLSelectElement>('select[name="contactType"]')!
@@ -156,10 +160,33 @@ function renderLogin(): void {
   })
 }
 
-function renderRegistration(profile: Profile): void {
+function renderRegistration(profile: Profile, teachers: TeacherSummary[], teachersError: string | null = null): void {
+  const isTeacher = profile.role === 'TEACHER'
+  const roleField = isTeacher
+    ? '<input name="role" type="hidden" value="STUDENT"><p class="fixed-role">Роль: <strong>Ученик</strong></p>'
+    : '<label>Роль<select name="role" required><option value="STUDENT">Ученик</option><option value="TEACHER">Преподаватель</option><option value="ADMIN">Администратор</option></select></label>'
+  const teacherOptions = teachers.map((teacher) =>
+    `<option value="${teacher.id}">${escapeHtml(teacher.username)}</option>`).join('')
+  const teacherStateOption = teachersError
+    ? '<option value="" disabled>Не удалось загрузить преподавателей</option>'
+    : teachers.length === 0 ? '<option value="" disabled>Преподаватели не найдены</option>' : ''
+  const teacherHint = teachersError ?? 'Можно оставить пустым и назначить преподавателя позже.'
+  const teacherField = isTeacher ? '' : `<label id="teacher-field">Преподаватель<select name="teacherId"><option value="">Не назначен</option>${teacherStateOption}${teacherOptions}</select><small>${escapeHtml(teacherHint)}</small></label>`
   document.title = 'Регистрация пользователя — Repitma'
-  app.innerHTML = `${header(profile)}<main><section class="auth-card"><p class="eyebrow">Для администратора</p><h1>Новый пользователь</h1><form><label>Логин<input name="username" autocomplete="off" minlength="3" maxlength="32" required></label><label>Пароль<input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required></label><label>Роль<select name="role" required><option value="STUDENT">Ученик</option><option value="TEACHER">Преподаватель</option><option value="ADMIN">Администратор</option></select></label><button class="primary-button" type="submit">Создать пользователя</button><p id="message" role="status"></p></form></section></main>${footer()}`
+  app.innerHTML = `${header(profile)}<main><section class="auth-card"><p class="eyebrow">${isTeacher ? 'Новый ученик' : 'Управление пользователями'}</p><h1 class="registration-title"><span>Новый</span> <span>пользователь</span></h1><form><label>Логин<input name="username" autocomplete="off" minlength="3" maxlength="32" required></label><label>Пароль<input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required></label>${roleField}${teacherField}<button class="primary-button" type="submit">Создать пользователя</button><p id="message" role="status"></p></form></section></main>${footer()}`
   bindHeader()
+  const roleSelect = document.querySelector<HTMLSelectElement>('select[name="role"]')
+  const teacherFieldElement = document.querySelector<HTMLElement>('#teacher-field')
+  roleSelect?.addEventListener('change', () => {
+    if (!teacherFieldElement) return
+    const teacherSelect = teacherFieldElement.querySelector<HTMLSelectElement>('select[name="teacherId"]')
+    const isStudent = roleSelect.value === 'STUDENT'
+    teacherFieldElement.hidden = !isStudent
+    if (teacherSelect) {
+      teacherSelect.disabled = !isStudent
+      if (!isStudent) teacherSelect.value = ''
+    }
+  })
   document.querySelector('form')!.addEventListener('submit', async (event) => {
     event.preventDefault()
     const form = event.currentTarget as HTMLFormElement
@@ -167,13 +194,14 @@ function renderRegistration(profile: Profile): void {
     const username = String(data.get('username') ?? '')
     const password = String(data.get('password') ?? '')
     const role = String(data.get('role') ?? '') as UserRole
+    const teacherId = data.get('teacherId') ? Number(data.get('teacherId')) : null
     const message = document.querySelector<HTMLParagraphElement>('#message')!
     const button = form.querySelector<HTMLButtonElement>('button')!
     try {
       button.disabled = true
       message.className = 'status'
       message.textContent = ''
-      const created = await register(username, password, role)
+      const created = await register(username, password, role, teacherId)
       message.className = 'status success'
       const title = document.createElement('strong')
       title.textContent = 'Пользователь создан!'
@@ -186,6 +214,27 @@ function renderRegistration(profile: Profile): void {
       button.disabled = false
     }
   })
+}
+
+function courseContact(course: CourseSummary): string {
+  if (course.telegram) return `Telegram: ${escapeHtml(course.telegram)}`
+  if (course.vk) return `ВКонтакте: ${escapeHtml(course.vk)}`
+  return '<span class="empty-value">Контакт не указан</span>'
+}
+
+function renderStudents(profile: Profile, courses: CourseSummary[]): void {
+  document.title = 'Ученики — Repitma'
+  const rows = courses.length
+    ? courses.map((course) => `<a class="student-row" href="/courses/${course.id}"><span><strong>${escapeHtml(course.username)}</strong>${course.name ? `<small>${escapeHtml(course.name)}</small>` : ''}</span><span>${displayValue(course.city)}</span><span>${courseContact(course)}</span><span class="row-arrow">→</span></a>`).join('')
+    : '<div class="empty-list"><h2>Учеников пока нет</h2><p>Зарегистрируйте ученика — курс текущего учебного года создастся автоматически.</p><a class="primary-button" href="/register">Зарегистрировать ученика</a></div>'
+  app.innerHTML = `${header(profile)}<main><section class="students-page"><p class="eyebrow">Текущий учебный год</p><h1>Ученики</h1><div class="student-list">${rows}</div></section></main>${footer()}`
+  bindHeader()
+}
+
+function renderCourse(profile: Profile, course: CourseSummary): void {
+  document.title = `${course.name ?? course.username} — курс`
+  app.innerHTML = `${header(profile)}<main><section class="course-page"><a class="back-link" href="/students">← Все ученики</a><p class="eyebrow">Курс ${escapeHtml(course.academicYear)}</p><h1>${escapeHtml(course.name ?? course.username)}</h1><div class="course-layout"><dl><div><dt>Логин</dt><dd>${escapeHtml(course.username)}</dd></div><div><dt>Имя</dt><dd>${displayValue(course.name)}</dd></div><div><dt>Город</dt><dd>${displayValue(course.city)}</dd></div><div><dt>Класс</dt><dd>${course.grade ? `${course.grade} класс` : '<span class="empty-value">Не указано</span>'}</dd></div><div><dt>Контакт</dt><dd>${courseContact(course)}</dd></div></dl><div class="course-placeholder"><span>Курс</span><h2>Материалы появятся позже</h2><p>Здесь будут программа, занятия, домашние задания и прогресс ученика.</p></div></div></section></main>${footer()}`
+  bindHeader()
 }
 
 async function start(): Promise<void> {
@@ -208,11 +257,43 @@ async function start(): Promise<void> {
       window.location.href = '/login'
       return
     }
-    if (profile.role !== 'ADMIN') {
+    if (profile.role !== 'ADMIN' && profile.role !== 'TEACHER') {
       window.location.href = '/account'
       return
     }
-    renderRegistration(profile)
+    let teachers: TeacherSummary[] = []
+    let teachersError: string | null = null
+    if (profile.role === 'ADMIN') {
+      try {
+        teachers = await getTeachers()
+      } catch (error) {
+        teachersError = error instanceof Error ? error.message : 'Не удалось загрузить преподавателей'
+      }
+    }
+    renderRegistration(profile, teachers, teachersError)
+    return
+  }
+  if (path === '/students') {
+    if (!profile || profile.role !== 'TEACHER') {
+      window.location.href = profile ? '/account' : '/login'
+      return
+    }
+    const courses = await getCourses().catch(() => [])
+    renderStudents(profile, courses)
+    return
+  }
+  const courseMatch = path.match(/^\/courses\/(\d+)$/)
+  if (courseMatch) {
+    if (!profile || profile.role !== 'TEACHER') {
+      window.location.href = profile ? '/account' : '/login'
+      return
+    }
+    const course = await getCourse(Number(courseMatch[1])).catch(() => null)
+    if (!course) {
+      window.location.href = '/students'
+      return
+    }
+    renderCourse(profile, course)
     return
   }
   if (path === '/account') {

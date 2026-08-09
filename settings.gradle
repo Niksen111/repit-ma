@@ -3,4 +3,4 @@ plugins {
 }
 rootProject.name = 'repit-ma'
 
-include 'app', 'auth'
+include 'app', 'auth', 'users', 'courses'

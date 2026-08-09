@@ -15,6 +15,8 @@ dependencyManagement {
 
 dependencies {
     api project(':users')
-    api 'org.springframework.boot:spring-boot-starter-security'
+    api 'org.springframework.boot:spring-boot-starter-webmvc'
+    api 'org.springframework.security:spring-security-core'
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.1'
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
 }
