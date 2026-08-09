@@ -3,12 +3,25 @@
     PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="ru.niksen111.repitma.auth.mapper.UserMapper">
+    <resultMap id="userAccount" type="ru.niksen111.repitma.auth.entity.UserAccount">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="passwordHash" column="password_hash"/>
+        <result property="role" column="role" javaType="ru.niksen111.repitma.auth.entity.UserRole"/>
+    </resultMap>
+
     <insert
         id="insert"
         useGeneratedKeys="true"
         keyProperty="id"
         keyColumn="id">
-        INSERT INTO users (username, password_hash)
-        VALUES (#{username}, #{passwordHash})
+        INSERT INTO users (username, password_hash, role)
+        VALUES (#{username}, #{passwordHash}, #{role})
     </insert>
+
+    <select id="findByUsername" resultMap="userAccount">
+        SELECT id, username, password_hash, role
+        FROM users
+        WHERE username = #{username} COLLATE NOCASE
+    </select>
 </mapper>

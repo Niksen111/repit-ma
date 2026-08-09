@@ -19,6 +19,7 @@ class RegistrationService(
         val user = UserAccount(
             username = request.username,
             passwordHash = passwordEncoder.encode(request.password)!!,
+            role = request.role,
         )
 
         try {
@@ -30,6 +31,7 @@ class RegistrationService(
         return RegistrationResponse(
             id = requireNotNull(user.id) { "Generated user id is missing" },
             username = user.username,
+            role = user.role,
         )
     }
 }

@@ -3,6 +3,7 @@ package ru.niksen111.repitma.auth.dto
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
+import ru.niksen111.repitma.auth.entity.UserRole
 
 data class RegistrationRequest(
     @field:NotBlank(message = "Введите логин")
@@ -14,4 +15,5 @@ data class RegistrationRequest(
     val username: String,
     @field:Size(min = 8, max = 72, message = "Пароль должен содержать от 8 до 72 символов")
     val password: String,
+    val role: UserRole,
 )

@@ -6,6 +6,7 @@ import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import ru.niksen111.repitma.auth.dto.RegistrationRequest
 import ru.niksen111.repitma.auth.entity.UserAccount
+import ru.niksen111.repitma.auth.entity.UserRole
 import ru.niksen111.repitma.auth.exception.UsernameAlreadyExistsException
 import ru.niksen111.repitma.auth.mapper.UserMapper
 import java.util.concurrent.ConcurrentHashMap
@@ -16,17 +17,18 @@ class RegistrationServiceTests {
 
     @Test
     fun `preserves the username`() {
-        val response = service.register(RegistrationRequest("New.User", "password123"))
+        val response = service.register(RegistrationRequest("New.User", "password123", UserRole.TEACHER))
 
         assertEquals("New.User", response.username)
+        assertEquals(UserRole.TEACHER, response.role)
     }
 
     @Test
     fun `rejects a duplicate username ignoring case`() {
-        service.register(RegistrationRequest("new-user", "password123"))
+        service.register(RegistrationRequest("new-user", "password123", UserRole.STUDENT))
 
         assertThrows<UsernameAlreadyExistsException> {
-            service.register(RegistrationRequest("NEW-USER", "another-password"))
+            service.register(RegistrationRequest("NEW-USER", "another-password", UserRole.STUDENT))
         }
     }
 }
@@ -42,4 +44,6 @@ private class FakeUserMapper : UserMapper {
         user.id = nextId++
         return 1
     }
+
+    override fun findByUsername(username: String): UserAccount? = users[username.lowercase()]
 }

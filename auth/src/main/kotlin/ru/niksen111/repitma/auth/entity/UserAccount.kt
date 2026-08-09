@@ -4,4 +4,5 @@ data class UserAccount(
     var id: Long? = null,
     val username: String,
     val passwordHash: String,
+    val role: UserRole,
 )
