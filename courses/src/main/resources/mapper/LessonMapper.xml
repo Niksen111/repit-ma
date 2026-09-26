@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.niksen111.repitma.courses.mapper.LessonMapper">
+    <resultMap id="lesson" type="ru.niksen111.repitma.courses.entity.Lesson">
+        <id property="id" column="id"/>
+        <result property="courseId" column="course_id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="scheduledAt" column="scheduled_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO lessons (course_id, title, description, scheduled_at)
+        VALUES (#{courseId}, #{title}, #{description}, #{scheduledAt})
+    </insert>
+
+    <update id="update">
+        UPDATE lessons
+        SET title = #{title},
+            description = #{description},
+            scheduled_at = #{scheduledAt}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM lessons
+        WHERE id = #{lessonId}
+    </delete>
+
+    <select id="findById" resultMap="lesson">
+        SELECT id, course_id, title, description, scheduled_at
+        FROM lessons
+        WHERE id = #{lessonId}
+    </select>
+
+    <select id="findByCourse" resultMap="lesson">
+        SELECT id, course_id, title, description, scheduled_at
+        FROM lessons
+        WHERE course_id = #{courseId}
+        ORDER BY scheduled_at, id
+    </select>
+
+    <insert id="attachFile">
+        INSERT INTO lesson_files (lesson_id, file_id)
+        VALUES (#{lessonId}, #{fileId})
+    </insert>
+
+    <delete id="detachFile">
+        DELETE FROM lesson_files
+        WHERE lesson_id = #{lessonId} AND file_id = #{fileId}
+    </delete>
+
+    <select id="containsFile" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM lesson_files
+            WHERE lesson_id = #{lessonId} AND file_id = #{fileId}
+        )
+    </select>
+
+    <select id="findFiles" resultMap="ru.niksen111.repitma.courses.mapper.FileMapper.fileResponse">
+        SELECT f.id, f.original_name, f.content_type
+        FROM course_files f
+        JOIN lesson_files link ON link.file_id = f.id
+        WHERE link.lesson_id = #{lessonId}
+        ORDER BY f.id
+    </select>
+</mapper>

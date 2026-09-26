@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.niksen111.repitma.courses.mapper.FileMapper">
+    <resultMap id="file" type="ru.niksen111.repitma.courses.entity.CourseFile">
+        <constructor>
+            <idArg column="id" javaType="java.lang.Long"/>
+            <arg column="original_name" javaType="java.lang.String"/>
+            <arg column="content_type" javaType="java.lang.String"/>
+            <arg
+                column="content"
+                javaType="[B"
+                typeHandler="org.apache.ibatis.type.ByteArrayTypeHandler"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="fileResponse" type="ru.niksen111.repitma.courses.dto.FileResponse">
+        <id property="id" column="id"/>
+        <result property="originalName" column="original_name"/>
+        <result property="contentType" column="content_type"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO course_files (original_name, content_type, content)
+        VALUES (#{originalName}, #{contentType}, #{content})
+    </insert>
+
+    <select id="findById" resultMap="file">
+        SELECT id, original_name, content_type, content
+        FROM course_files
+        WHERE id = #{fileId}
+    </select>
+
+    <delete id="deleteIfUnreferenced">
+        DELETE FROM course_files
+        WHERE id = #{fileId}
+          AND NOT EXISTS (SELECT 1 FROM lesson_files WHERE file_id = #{fileId})
+          AND NOT EXISTS (SELECT 1 FROM task_files WHERE file_id = #{fileId})
+          AND NOT EXISTS (SELECT 1 FROM solution_files WHERE file_id = #{fileId})
+    </delete>
+</mapper>

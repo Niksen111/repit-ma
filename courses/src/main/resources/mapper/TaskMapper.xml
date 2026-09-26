@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.niksen111.repitma.courses.mapper.TaskMapper">
+    <resultMap id="task" type="ru.niksen111.repitma.courses.entity.Task">
+        <id property="id" column="id"/>
+        <result property="lessonId" column="lesson_id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO tasks (lesson_id, title, description)
+        VALUES (#{lessonId}, #{title}, #{description})
+    </insert>
+
+    <update id="update">
+        UPDATE tasks
+        SET title = #{title},
+            description = #{description}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM tasks
+        WHERE id = #{taskId}
+    </delete>
+
+    <select id="findById" resultMap="task">
+        SELECT id, lesson_id, title, description
+        FROM tasks
+        WHERE id = #{taskId}
+    </select>
+
+    <select id="findByLesson" resultMap="task">
+        SELECT id, lesson_id, title, description
+        FROM tasks
+        WHERE lesson_id = #{lessonId}
+        ORDER BY id
+    </select>
+
+    <insert id="attachFile">
+        INSERT INTO task_files (task_id, file_id)
+        VALUES (#{taskId}, #{fileId})
+    </insert>
+
+    <delete id="detachFile">
+        DELETE FROM task_files
+        WHERE task_id = #{taskId} AND file_id = #{fileId}
+    </delete>
+
+    <select id="containsFile" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM task_files
+            WHERE task_id = #{taskId} AND file_id = #{fileId}
+        )
+    </select>
+
+    <select id="findFiles" resultMap="ru.niksen111.repitma.courses.mapper.FileMapper.fileResponse">
+        SELECT f.id, f.original_name, f.content_type
+        FROM course_files f
+        JOIN task_files link ON link.file_id = f.id
+        WHERE link.task_id = #{taskId}
+        ORDER BY f.id
+    </select>
+</mapper>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.niksen111.repitma.courses.mapper.SolutionMapper">
+    <resultMap id="solution" type="ru.niksen111.repitma.courses.entity.Solution">
+        <id property="id" column="id"/>
+        <result property="taskId" column="task_id"/>
+        <result property="description" column="description"/>
+        <result property="grade" column="grade"/>
+        <result property="teacherComment" column="teacher_comment"/>
+        <result property="gradedAt" column="graded_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO solutions (task_id, description)
+        VALUES (#{taskId}, #{description})
+        ON CONFLICT (task_id) DO NOTHING
+    </insert>
+
+    <update id="update">
+        UPDATE solutions
+        SET description = #{description}
+        WHERE id = #{id}
+          AND grade IS NULL
+    </update>
+
+    <update id="grade">
+        UPDATE solutions
+        SET grade = #{grade},
+            teacher_comment = #{teacherComment},
+            graded_at = #{gradedAt}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM solutions
+        WHERE id = #{solutionId}
+    </delete>
+
+    <select id="findById" resultMap="solution">
+        SELECT id, task_id, description, grade, teacher_comment, graded_at
+        FROM solutions
+        WHERE id = #{solutionId}
+    </select>
+
+    <select id="findByTask" resultMap="solution">
+        SELECT id, task_id, description, grade, teacher_comment, graded_at
+        FROM solutions
+        WHERE task_id = #{taskId}
+    </select>
+
+    <insert id="attachFile">
+        INSERT INTO solution_files (solution_id, file_id)
+        VALUES (#{solutionId}, #{fileId})
+    </insert>
+
+    <delete id="detachFile">
+        DELETE FROM solution_files
+        WHERE solution_id = #{solutionId} AND file_id = #{fileId}
+    </delete>
+
+    <select id="containsFile" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM solution_files
+            WHERE solution_id = #{solutionId} AND file_id = #{fileId}
+        )
+    </select>
+
+    <select id="findFiles" resultMap="ru.niksen111.repitma.courses.mapper.FileMapper.fileResponse">
+        SELECT f.id, f.original_name, f.content_type
+        FROM course_files f
+        JOIN solution_files link ON link.file_id = f.id
+        WHERE link.solution_id = #{solutionId}
+        ORDER BY f.id
+    </select>
+</mapper>

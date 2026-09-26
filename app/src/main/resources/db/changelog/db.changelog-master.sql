@@ -65,3 +65,78 @@ CREATE INDEX ix_courses_student ON courses (student_id);
 --rollback DROP INDEX ix_courses_student;
 --rollback DROP INDEX ix_courses_teacher;
 --rollback DROP TABLE courses;
+
+--changeset niksen111:006-create-course-learning-materials
+CREATE TABLE lessons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    scheduled_at TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (course_id) REFERENCES courses (id)
+);
+
+CREATE INDEX ix_lessons_course_scheduled ON lessons (course_id, scheduled_at);
+
+CREATE TABLE tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    lesson_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    FOREIGN KEY (lesson_id) REFERENCES lessons (id)
+);
+
+CREATE INDEX ix_tasks_lesson ON tasks (lesson_id);
+
+CREATE TABLE solutions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL UNIQUE,
+    description TEXT,
+    grade INTEGER CHECK (grade IN (0, 1)),
+    teacher_comment TEXT,
+    graded_at TEXT,
+    FOREIGN KEY (task_id) REFERENCES tasks (id)
+);
+
+CREATE TABLE course_files (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    original_name TEXT NOT NULL,
+    content_type TEXT NOT NULL,
+    content BLOB NOT NULL,
+    uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE lesson_files (
+    lesson_id INTEGER NOT NULL,
+    file_id INTEGER NOT NULL,
+    PRIMARY KEY (lesson_id, file_id),
+    FOREIGN KEY (lesson_id) REFERENCES lessons (id),
+    FOREIGN KEY (file_id) REFERENCES course_files (id)
+);
+
+CREATE TABLE task_files (
+    task_id INTEGER NOT NULL,
+    file_id INTEGER NOT NULL,
+    PRIMARY KEY (task_id, file_id),
+    FOREIGN KEY (task_id) REFERENCES tasks (id),
+    FOREIGN KEY (file_id) REFERENCES course_files (id)
+);
+
+CREATE TABLE solution_files (
+    solution_id INTEGER NOT NULL,
+    file_id INTEGER NOT NULL,
+    PRIMARY KEY (solution_id, file_id),
+    FOREIGN KEY (solution_id) REFERENCES solutions (id),
+    FOREIGN KEY (file_id) REFERENCES course_files (id)
+);
+
+--rollback DROP TABLE solution_files;
+--rollback DROP TABLE task_files;
+--rollback DROP TABLE lesson_files;
+--rollback DROP TABLE course_files;
+--rollback DROP TABLE solutions;
+--rollback DROP INDEX ix_tasks_lesson;
+--rollback DROP TABLE tasks;
+--rollback DROP INDEX ix_lessons_course_scheduled;
+--rollback DROP TABLE lessons;
