@@ -16,7 +16,7 @@ CREATE UNIQUE INDEX uq_users_username_nocase
 
 --changeset niksen111:002-add-user-role
 ALTER TABLE users ADD COLUMN role TEXT NOT NULL
-    CHECK (role IN ('ADMIN', 'TEACHER', 'STUDENT'));
+    CHECK (role IN ('ADMIN', 'TEACHER', 'STUDENT')) default 'STUDENT';
 
 INSERT INTO users (username, password_hash, role)
 VALUES (
