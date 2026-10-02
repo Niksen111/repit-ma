@@ -22,7 +22,7 @@ class AuthConfiguration {
             it.requestMatchers(
                 "/", "/index.html", "/login", "/register", "/account", "/privacy",
                 "/students", "/learning", "/courses/*",
-                "/assets/**", "/error",
+                "/assets/**", "/images/**", "/error",
             ).permitAll()
                 .requestMatchers("/api/auth/register").hasAnyRole("ADMIN", "TEACHER")
                 .anyRequest().authenticated()
