@@ -1,0 +1,37 @@
+services:
+  app:
+    image: ghcr.io/niksen111/repit-ma:${APP_VERSION:?Set APP_VERSION in .env}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      REPIT_MA_DATABASE_PATH: /data/repit-ma.db
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx192m"
+      SERVER_TOMCAT_THREADS_MAX: "20"
+      SERVER_TOMCAT_THREADS_MIN_SPARE: "2"
+    volumes:
+      - ./data:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+volumes:
+  caddy_data:
+  caddy_config:
