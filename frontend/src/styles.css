@@ -118,7 +118,7 @@ input, select { width: 100%; padding: 15px 16px; border: 1px solid #38453e66; bo
 .empty-list { max-width: 580px; padding: 34px; border-radius: 18px; background: #edf1e9; }
 .empty-list h2 { margin-top: 0; }.empty-list p { margin-bottom: 24px; line-height: 1.6; }
 .back-link { display: inline-block; margin-bottom: 42px; font-weight: 700; }
-.course-layout { display: grid; grid-template-columns: .8fr 1.2fr; gap: 44px; align-items: start; margin-top: 46px; }
+.course-layout { display: grid; grid-template-columns: minmax(180px, .55fr) minmax(0, 1.45fr); gap: 32px; align-items: start; margin-top: 46px; }
 .course-layout dl { margin: 0; }
 .course-placeholder { min-height: 280px; padding: 38px; border: 1px dashed #38453e66; border-radius: 20px; background: #edf1e966; }
 .course-placeholder > span { font-size: 11px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; opacity: .55; }
@@ -180,3 +180,49 @@ input, select { width: 100%; padding: 15px 16px; border: 1px solid #38453e66; bo
   .olympiad-card li { border-radius: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .menu-toggle span { transition: none; } }
+
+.course-materials, .lesson-card, .homework-card { min-width: 0; }
+.materials-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.materials-heading h2, .materials-heading h3, .materials-heading h4 { margin: 0; overflow-wrap: anywhere; }
+.materials-heading h2 { font-size: 24px; }
+.material-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.material-actions button { padding: 9px 14px; font-size: 12px; }
+#learning-message { margin: 16px 0; }
+#lesson-list { display: grid; gap: 8px; margin: 20px 0 28px; }
+.lesson-row { display: grid; gap: 7px; width: 100%; text-align: left; padding: 18px 20px; border: 1px solid #38453e33; border-radius: 14px; background: #fffdf5; color: inherit; font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+.lesson-row span { font-weight: 700; }
+.lesson-row time, .muted { font-size: 13px; line-height: 1.6; color: #66706a; }
+.lesson-row.selected { border-color: var(--accent); background: #dce9df; }
+.lesson-card { padding: 24px; border: 1px solid #38453e33; border-radius: 20px; background: #fffdf5; }
+.material-description { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; }
+.attachment-section { margin: 24px 0; }
+.attachment-section h4 { margin: 0 0 12px; }
+.attachment-list { display: grid; gap: 8px; padding: 0; list-style: none; }
+.attachment-list li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; background: #edf1e9; }
+.file-download, .file-remove { border: 0; background: transparent; font: inherit; color: var(--accent); cursor: pointer; min-height: 32px; }
+.file-download { text-align: left; text-decoration: underline; overflow-wrap: anywhere; min-width: 0; }
+.file-remove { margin-left: auto; color: #a33d2d; font-size: 12px; flex-shrink: 0; }
+.upload-label { font-size: 13px; }
+.upload-label input { padding: 10px; font-weight: 400; }
+.homework-heading { padding-top: 24px; border-top: 1px solid #38453e33; }
+.homework-card { margin-top: 20px; padding: 20px; background: #fff9ea; border-radius: 14px; }
+.solution-section { padding-top: 20px; border-top: 1px solid #38453e33; }
+.grade-badge { padding: 6px 12px; border-radius: 99px; background: #f5d7ae; font-size: 12px; font-weight: 700; }
+.grade-badge.passed { color: #23643a; background: #dce9df; }
+.grade-badge.failed { color: #8f2e23; background: #f8ded6; }
+.teacher-comment { border-left: 3px solid var(--accent); padding-left: 16px; margin: 20px 0; }
+.teacher-comment h4 { margin-bottom: 0; }
+textarea { width: 100%; padding: 15px 16px; border: 1px solid #38453e66; border-radius: 10px; background: #fffdf5; color: inherit; font: inherit; resize: vertical; }
+.material-dialog { width: min(600px, calc(100% - 32px)); max-height: 90vh; padding: 28px; border: 1px solid #38453e33; border-radius: 20px; background: #fff9ea; color: inherit; }
+.material-dialog::backdrop { background: #23382e80; }
+.material-dialog form { margin: 0; }
+.material-dialog h2 { margin: 0; }
+#editor-fields { display: grid; gap: 20px; }
+button:disabled { cursor: wait; opacity: .55; }
+:focus-visible { outline: 3px solid #d9785f; outline-offset: 3px; }
+@media (max-width: 760px) {
+  .course-layout { grid-template-columns: 1fr; }
+  .lesson-card { padding: 18px; }
+  .homework-card { padding: 16px; }
+  .material-dialog { padding: 20px; }
+}

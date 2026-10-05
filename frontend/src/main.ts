@@ -1,4 +1,5 @@
 import './styles.css'
+import { mountCourseLearning } from './course-learning.ts'
 import { getCourse, getCourses, getProfile, getTeachers, login, logout, register, updateProfile, type CourseSummary, type Profile, type TeacherSummary, type UserRole } from './auth-api.ts'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -11,7 +12,7 @@ const roleNames: Record<UserRole, string> = {
 function header(profile: Profile | null): string {
   const canRegister = profile?.role === 'ADMIN' || profile?.role === 'TEACHER'
   const registrationLink = canRegister ? '<a href="/register">Регистрация</a>' : ''
-  const studentsLink = profile?.role === 'TEACHER' ? '<a href="/students">Ученики</a>' : ''
+  const studentsLink = profile?.role === 'TEACHER' || profile?.role === 'ADMIN' ? '<a href="/students">Ученики</a>' : ''
   const learningLink = profile?.role === 'STUDENT' ? '<a href="/learning">Обучение</a>' : ''
   const links = profile
     ? `<a href="/">Главная</a>${studentsLink}${learningLink}${registrationLink}<a href="/account">Аккаунт</a><button id="logout" type="button">Выйти</button>`
@@ -242,13 +243,15 @@ function renderCourse(profile: Profile, course: CourseSummary): void {
   if (profile.role === 'STUDENT') {
     document.title = `Обучение — ${course.teacherName ?? 'преподаватель'}`
     const teacherContact = teacherCourseContact(course)
-    app.innerHTML = `${header(profile)}<main><section class="course-page"><a class="back-link" href="/learning">← Все курсы</a><p class="eyebrow">Курс ${escapeHtml(course.academicYear)}</p><h1>Обучение</h1><div class="course-layout"><dl><div><dt>Имя преподавателя</dt><dd>${displayValue(course.teacherName)}</dd></div><div><dt>Контакт</dt><dd>${teacherContact}</dd></div></dl><div class="course-placeholder"><span>Курс</span><h2>Материалы появятся позже</h2><p>Здесь будут программа, занятия, домашние задания и ваш прогресс.</p></div></div></section></main>${footer()}`
+    app.innerHTML = `${header(profile)}<main><section class="course-page"><a class="back-link" href="/learning">← Все курсы</a><p class="eyebrow">Курс ${escapeHtml(course.academicYear)}</p><h1>Обучение</h1><div class="course-layout"><dl><div><dt>Имя преподавателя</dt><dd>${displayValue(course.teacherName)}</dd></div><div><dt>Контакт</dt><dd>${teacherContact}</dd></div></dl><div id="course-learning" class="course-materials"></div></div></section></main>${footer()}`
     bindHeader()
+    mountCourseLearning(document.querySelector<HTMLElement>('#course-learning')!, profile, course.id)
     return
   }
   document.title = `${course.name ?? course.username} — курс`
-  app.innerHTML = `${header(profile)}<main><section class="course-page"><a class="back-link" href="/students">← Все ученики</a><p class="eyebrow">Курс ${escapeHtml(course.academicYear)}</p><h1>${escapeHtml(course.name ?? course.username)}</h1><div class="course-layout"><dl><div><dt>Логин</dt><dd>${escapeHtml(course.username)}</dd></div><div><dt>Имя</dt><dd>${displayValue(course.name)}</dd></div><div><dt>Город</dt><dd>${displayValue(course.city)}</dd></div><div><dt>Класс</dt><dd>${course.grade ? `${course.grade} класс` : '<span class="empty-value">Не указано</span>'}</dd></div><div><dt>Контакт</dt><dd>${courseContact(course)}</dd></div></dl><div class="course-placeholder"><span>Курс</span><h2>Материалы появятся позже</h2><p>Здесь будут программа, занятия, домашние задания и прогресс ученика.</p></div></div></section></main>${footer()}`
+  app.innerHTML = `${header(profile)}<main><section class="course-page"><a class="back-link" href="/students">← Все ученики</a><p class="eyebrow">Курс ${escapeHtml(course.academicYear)}</p><h1>${escapeHtml(course.name ?? course.username)}</h1><div class="course-layout"><dl><div><dt>Логин</dt><dd>${escapeHtml(course.username)}</dd></div><div><dt>Имя</dt><dd>${displayValue(course.name)}</dd></div><div><dt>Город</dt><dd>${displayValue(course.city)}</dd></div><div><dt>Класс</dt><dd>${course.grade ? `${course.grade} класс` : '<span class="empty-value">Не указано</span>'}</dd></div><div><dt>Контакт</dt><dd>${courseContact(course)}</dd></div></dl><div id="course-learning" class="course-materials"></div></div></section></main>${footer()}`
   bindHeader()
+  mountCourseLearning(document.querySelector<HTMLElement>('#course-learning')!, profile, course.id)
 }
 
 function renderLearning(profile: Profile, courses: CourseSummary[]): void {
@@ -297,7 +300,7 @@ async function start(): Promise<void> {
     return
   }
   if (path === '/students') {
-    if (!profile || profile.role !== 'TEACHER') {
+    if (!profile || (profile.role !== 'TEACHER' && profile.role !== 'ADMIN')) {
       window.location.href = profile ? '/account' : '/login'
       return
     }
@@ -320,7 +323,7 @@ async function start(): Promise<void> {
   }
   const courseMatch = path.match(/^\/courses\/(\d+)$/)
   if (courseMatch) {
-    if (!profile || (profile.role !== 'TEACHER' && profile.role !== 'STUDENT')) {
+    if (!profile) {
       window.location.href = profile ? '/account' : '/login'
       return
     }
