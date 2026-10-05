@@ -50,8 +50,13 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
   const textData = (data: FormData) => ({ title: String(data.get('title')).trim(), description: String(data.get('description') ?? '').trim() || null })
 
   function lessonEditor(lesson?: Lesson): void {
-    openEditor(lesson ? 'Редактировать занятие' : 'Новое занятие', textFields(lesson) + `<label>Дата и время занятия<input type="datetime-local" name="scheduledAt" step="1" required value="${escape(lesson?.scheduledAt ?? '')}"></label>`, async data => {
-      const saved = await api.request<Lesson>(lesson ? `/lessons/${lesson.id}` : '/lessons', lesson ? 'PUT' : 'POST', { ...textData(data), scheduledAt: String(data.get('scheduledAt')) })
+    const now = new Date()
+    const pad = (value: number) => String(value).padStart(2, '0')
+    const scheduledDate = lesson?.scheduledAt.slice(0, 10) ?? `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+    const scheduledTime = lesson?.scheduledAt.slice(11, 16) ?? ''
+    openEditor(lesson ? 'Редактировать занятие' : 'Новое занятие', textFields(lesson) + `<div class="lesson-schedule-fields"><label>Дата занятия<input type="date" name="scheduledDate" required value="${escape(scheduledDate)}"></label><label>Время занятия<input type="time" name="scheduledTime" step="60" required value="${escape(scheduledTime)}"></label></div>`, async data => {
+      const scheduledAt = `${data.get('scheduledDate')}T${String(data.get('scheduledTime')).slice(0, 5)}:00`
+      const saved = await api.request<Lesson>(lesson ? `/lessons/${lesson.id}` : '/lessons', lesson ? 'PUT' : 'POST', { ...textData(data), scheduledAt })
       selected = saved.id
       await loadLessons()
     })

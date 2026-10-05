@@ -29,6 +29,11 @@ h1 { max-width: 850px; margin: 0; font: 700 clamp(44px, 7vw, 86px)/1.03 Unbounde
 .teacher-lead { max-width: 650px; margin: 30px 0; font-size: clamp(18px, 1.8vw, 22px); line-height: 1.65; }
 .teacher-meta { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .teacher-meta li { padding: 9px 14px; border: 1px solid #38453e44; border-radius: 99px; font-size: 13px; font-weight: 700; }
+.teacher-contacts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.teacher-contacts a { display: grid; gap: 5px; min-height: 44px; padding: 12px 16px; border: 1px solid #2d604e44; border-radius: 14px; background: #edf1e9; }
+.teacher-contacts a:hover { border-color: var(--accent); background: #dce9df; }
+.teacher-contacts span { font-size: 12px; color: #66706a; }
+.teacher-contacts strong { font-size: 14px; color: var(--accent); }
 .teacher-photo { width: 340px; margin: 0; justify-self: end; }
 .teacher-photo-frame { width: 340px; height: 255px; overflow: hidden; border-radius: 24px; box-shadow: 0 24px 60px #23382e24; }
 .teacher-photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
@@ -170,6 +175,10 @@ input, select { width: 100%; padding: 15px 16px; border: 1px solid #38453e66; bo
   .teacher-lead { margin: 24px 0; font-size: 17px; }
   .teacher-meta { gap: 7px; }
   .teacher-meta li { padding: 8px 11px; font-size: 12px; }
+  .teacher-contacts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr); width: 100%; gap: 5px; margin-top: 18px; }
+  .teacher-contacts a { min-width: 0; gap: 4px; padding: 9px 5px; border-radius: 10px; text-align: center; }
+  .teacher-contacts span { font-size: 10px; }
+  .teacher-contacts strong { font-size: clamp(9px, 2.7vw, 13px); white-space: nowrap; }
   .result-card, .experience-grid article { border-radius: 16px; }
   .score-line { gap: 8px; }
   .score-line strong { width: 52px; height: 52px; font-size: 16px; }
@@ -218,6 +227,8 @@ textarea { width: 100%; padding: 15px 16px; border: 1px solid #38453e66; border-
 .material-dialog form { margin: 0; }
 .material-dialog h2 { margin: 0; }
 #editor-fields { display: grid; gap: 20px; }
+.lesson-schedule-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.lesson-schedule-fields label, .lesson-schedule-fields input { min-width: 0; }
 button:disabled { cursor: wait; opacity: .55; }
 :focus-visible { outline: 3px solid #d9785f; outline-offset: 3px; }
 @media (max-width: 760px) {
@@ -225,4 +236,7 @@ button:disabled { cursor: wait; opacity: .55; }
   .lesson-card { padding: 18px; }
   .homework-card { padding: 16px; }
   .material-dialog { padding: 20px; }
+}
+@media (max-width: 560px) {
+  .lesson-schedule-fields { grid-template-columns: 1fr; }
 }
