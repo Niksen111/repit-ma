@@ -1,4 +1,5 @@
 import './styles.css'
+import { mountMariaReviews, renderMariaReviews, reviewLoginDestination } from './maria-reviews.ts'
 import { mountCourseLearning } from './course-learning.ts'
 import { getCourse, getCourses, getProfile, getTeachers, login, logout, register, updateProfile, type CourseSummary, type Profile, type TeacherSummary, type UserRole } from './auth-api.ts'
 
@@ -49,8 +50,9 @@ function bindHeader(): void {
 
 function renderHome(profile: Profile | null): void {
   document.title = 'Мария Воробьева — преподаватель математики'
-  app.innerHTML = `${header(profile)}<main class="teacher-page"><section class="teacher-hero"><div class="teacher-intro"><p class="eyebrow">Преподаватель математики</p><h1>Мария Александровна Воробьева</h1><p class="teacher-lead">Помогаю ученикам понять и полюбить математику — от школьной программы до олимпиад и ЕГЭ.</p><ul class="teacher-meta" aria-label="Краткая информация"><li>23 года</li><li>Стаж 5 лет</li><li>Санкт-Петербург</li></ul><div class="teacher-contacts" aria-label="Контакты Марии"><a href="https://t.me/supruno7" target="_blank" rel="noopener noreferrer"><span>Telegram</span><strong>@supruno7</strong></a><a href="https://vk.com/suprunno" target="_blank" rel="noopener noreferrer"><span>ВКонтакте</span><strong>@suprunno</strong></a><a href="https://wa.me/79887394970" target="_blank" rel="noopener noreferrer"><span>WhatsApp</span><strong>+7 988 739 4970</strong></a></div></div><figure class="teacher-photo"><div class="teacher-photo-frame"><img src="/images/maria-vorobieva-graduation-cropped.webp" alt="Мария Александровна Воробьева с дипломом СПбГУ" width="1200" height="900" fetchpriority="high"></div><figcaption>СПбГУ · фундаментальная математика · специалист</figcaption></figure></section><section class="teacher-results"><div class="section-title"><p class="eyebrow">Учебный год 2025/26</p><h2>Результаты учеников</h2></div><div class="results-grid"><article class="result-card ege-card"><span class="result-label">Лучшие баллы ЕГЭ</span><p class="score-line"><strong>98</strong><strong>98</strong><strong>96</strong><strong>90</strong><strong>88</strong></p></article><article class="result-card progress-card"><span class="result-label">Менее года подготовки</span><div class="progress-list"><span><s>22</s><b>64</b></span><span><s>40</s><b>72</b></span><span><s>46</s><b>78</b></span></div></article><article class="result-card olympiad-card"><span class="result-label">Дипломы олимпиад</span><ul><li>призёр МОШ</li><li>призёр «Физтех»</li><li>призёр «Курчатов»</li><li>победитель олимпиады на базе ведомственных организаций</li><li>призёр олимпиады имени Верченко</li><li>победитель «Надежды энергетики»</li></ul></article></div></section><section class="teacher-experience"><div class="section-title"><p class="eyebrow">Опыт и образование</p><h2>Математика с опорой на практику</h2></div><div class="experience-grid"><article><h3>Подготовка к поступлению</h3><p>Имею опыт успешной подготовки учеников к поступлению в Физтех-лицей, лицей НИУ ВШЭ и СУНЦ МГУ.</p></article><article><h3>Преподавательский опыт</h3><p>2,5 года работала в региональном центре дополнительного образования и вела курсы по олимпиадной математике. Участвовала в летних школах по подготовке к ЕГЭ и интенсивах по разбору второй части. Преподавала в университете в рамках педагогической практики.</p></article><article><h3>Личный олимпиадный путь</h3><p>Была призёром олимпиад «Физтех», по математике и криптографии имени Верченко и олимпиады по математике имени Курчатова.</p></article><article><h3>Формат занятий</h3><p>Занятия проходят онлайн на удобной платформе с интерактивной доской.</p></article></div></section><section class="teacher-approach"><p class="eyebrow">Подход к занятиям</p><blockquote>Стараюсь найти индивидуальный подход к каждому ученику. В начале работы определяю уровень знаний и составляю программу, чтобы занятия проходили с максимальной эффективностью.</blockquote><div class="approach-copy"><p>Успешно работаю как с сильными учениками, так и с маломотивированными ребятами, которых прежде всего важно заинтересовать предметом.</p><p>Люблю свою работу и много в неё вкладываюсь.</p></div></section></main>${footer()}`
+  app.innerHTML = `${header(profile)}<main class="teacher-page"><section class="teacher-hero"><div class="teacher-intro"><p class="eyebrow">Преподаватель математики</p><h1>Мария Александровна Воробьева</h1><p class="teacher-lead">Помогаю ученикам понять и полюбить математику — от школьной программы до олимпиад и ЕГЭ.</p><ul class="teacher-meta" aria-label="Краткая информация"><li>23 года</li><li>Стаж 5 лет</li><li>Санкт-Петербург</li></ul><div class="teacher-contacts" aria-label="Контакты Марии"><a href="https://t.me/supruno7" target="_blank" rel="noopener noreferrer"><span>Telegram</span><strong>@supruno7</strong></a><a href="https://vk.com/suprunno" target="_blank" rel="noopener noreferrer"><span>ВКонтакте</span><strong>@suprunno</strong></a><a href="https://wa.me/79887394970" target="_blank" rel="noopener noreferrer"><span>WhatsApp</span><strong>+7 988 739 4970</strong></a></div></div><figure class="teacher-photo"><div class="teacher-photo-frame"><img src="/images/maria-vorobieva-graduation-cropped.webp" alt="Мария Александровна Воробьева с дипломом СПбГУ" width="1200" height="900" fetchpriority="high"></div><figcaption>СПбГУ · фундаментальная математика · специалист</figcaption></figure></section><section class="teacher-results"><div class="section-title"><p class="eyebrow">Учебный год 2025/26</p><h2>Результаты учеников</h2></div><div class="results-grid"><article class="result-card ege-card"><span class="result-label">Лучшие баллы ЕГЭ</span><p class="score-line"><strong>98</strong><strong>98</strong><strong>96</strong><strong>90</strong><strong>88</strong></p></article><article class="result-card progress-card"><span class="result-label">Менее года подготовки</span><div class="progress-list"><span><s>22</s><b>64</b></span><span><s>40</s><b>72</b></span><span><s>46</s><b>78</b></span></div></article><article class="result-card olympiad-card"><span class="result-label">Дипломы олимпиад</span><ul><li>призёр МОШ</li><li>призёр «Физтех»</li><li>призёр «Курчатов»</li><li>победитель олимпиады на базе ведомственных организаций</li><li>призёр олимпиады имени Верченко</li><li>победитель «Надежды энергетики»</li></ul></article></div></section><section class="teacher-experience"><div class="teacher-experience-inner"><div class="section-title"><p class="eyebrow">Опыт и образование</p><h2>Математика с опорой на практику</h2></div><div class="experience-grid"><article><h3>Направления подготовки</h3><p>Тренер олимпиадной подготовки.<br>Готовлю учеников к сдаче таких экзаменов как ЕГЭ и ОГЭ, а также ДВИ при поступлении в вузы. Также занимаюсь повышением успеваемости.</p></article><article><h3>Подготовка к поступлению</h3><p>Имею опыт успешной подготовки учеников к поступлению в Физтех-лицей, лицей НИУ ВШЭ, школу Летово, лицей Лобачевского, СУНЦ МГУ и др.</p></article><article><h3>Преподавательский опыт</h3><p>2,5 года работала в региональном центре дополнительного образования и вела курсы по олимпиадной математике. Участвовала в летних школах по подготовке к ЕГЭ и интенсивах по разбору второй части. Преподавала в университете в рамках педагогической практики.</p></article><article><h3>Личный олимпиадный путь</h3><p>Была призёром олимпиад «Физтех», по математике и криптографии имени Верченко и олимпиады по математике имени Курчатова.</p></article></div></div></section><section class="teacher-format" aria-labelledby="lesson-format-title"><h2 id="lesson-format-title">Формат занятий</h2><div class="lesson-format-copy"><p>Занятия проходят на удобной онлайн-платформе, с использованием онлайн-доски, где ученики также могут делать записи вместе со мной.</p><p>Первое диагностическое занятие, где мы знакомимся и я определяю уровень начальной подготовки, — <strong>БЕСПЛАТНОЕ</strong>.</p><p>Стоимость занятий <strong>от 2000 р/час</strong>.</p></div></section><section class="teacher-approach"><p class="eyebrow">Подход к занятиям</p><blockquote>Стараюсь найти индивидуальный подход к каждому ученику. В начале работы определяю уровень знаний и составляю программу, чтобы занятия проходили с максимальной эффективностью.</blockquote><div class="approach-copy"><p>Успешно работаю как с сильными учениками, так и с маломотивированными ребятами, которых прежде всего важно заинтересовать предметом.</p><p>Люблю свою работу и много в неё вкладываюсь.</p></div></section>${renderMariaReviews(escapeHtml)}</main>${footer()}`
   bindHeader()
+  mountMariaReviews(app)
 }
 
 function displayValue(value: string | null): string {
@@ -152,7 +154,7 @@ function renderLogin(): void {
       button.disabled = true
       message.textContent = ''
       await login(username, password)
-      window.location.href = '/account'
+      window.location.href = reviewLoginDestination(window.location.search)
     } catch (error) {
       message.className = 'status error'
       message.textContent = error instanceof Error ? error.message : 'Произошла ошибка'
@@ -160,6 +162,13 @@ function renderLogin(): void {
       button.disabled = false
     }
   })
+  bindHeader()
+}
+
+function renderReviewContact(profile: Profile): void {
+  document.title = 'Оставить отзыв о Марии — Repitma'
+  app.innerHTML = `${header(profile)}<main><section class="account review-contact-page"><a class="back-link" href="/#reviews-title">← К отзывам</a><p class="eyebrow">Обратная связь о занятиях</p><h1>Поделитесь впечатлениями</h1><div class="review-contact-card"><h2>Напишите Марии</h2><p>Вы можете отправить отзыв Марии Александровне в одной из соцсетей. Ваш отзыв будет позже добавлен на сайт.</p><div class="teacher-contacts" aria-label="Контакты Марии"><a href="https://t.me/supruno7" target="_blank" rel="noopener noreferrer"><span>Telegram</span><strong>@supruno7</strong></a><a href="https://vk.com/suprunno" target="_blank" rel="noopener noreferrer"><span>ВКонтакте</span><strong>@suprunno</strong></a><a href="https://wa.me/79887394970" target="_blank" rel="noopener noreferrer"><span>WhatsApp</span><strong>+7 988 739 4970</strong></a></div></div></section></main>${footer()}`
+  bindHeader()
 }
 
 function renderRegistration(profile: Profile, teachers: TeacherSummary[], teachersError: string | null = null): void {
@@ -266,13 +275,21 @@ function renderLearning(profile: Profile, courses: CourseSummary[]): void {
 async function start(): Promise<void> {
   const path = window.location.pathname.replace(/\/$/, '') || '/'
   const profile = await getProfile().catch(() => null)
+  if (path === '/reviews/new') {
+    if (!profile) {
+      window.location.href = '/login?next=%2Freviews%2Fnew'
+      return
+    }
+    renderReviewContact(profile)
+    return
+  }
   if (path === '/privacy') {
     renderPrivacy(profile)
     return
   }
   if (path === '/login') {
     if (profile) {
-      window.location.href = '/account'
+      window.location.href = reviewLoginDestination(window.location.search)
       return
     }
     renderLogin()
