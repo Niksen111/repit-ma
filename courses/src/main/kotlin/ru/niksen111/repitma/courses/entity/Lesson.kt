@@ -6,4 +6,6 @@ data class Lesson(
     val title: String,
     val description: String?,
     val scheduledAt: String,
+    val outcome: LessonOutcome = LessonOutcome.AUTO,
+    val paid: Boolean = false,
 )

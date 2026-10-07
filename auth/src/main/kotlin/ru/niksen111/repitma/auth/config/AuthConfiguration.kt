@@ -21,7 +21,7 @@ class AuthConfiguration {
         .authorizeHttpRequests {
             it.requestMatchers(
                 "/", "/index.html", "/login", "/register", "/account", "/privacy",
-                "/students", "/learning", "/courses/*", "/reviews/new",
+                "/students", "/learning", "/courses/*", "/reviews/new", "/schedule",
                 "/assets/**", "/images/**", "/favicon.png", "/api/public/site", "/error",
             ).permitAll()
                 .requestMatchers("/api/auth/register").hasAnyRole("ADMIN", "TEACHER")

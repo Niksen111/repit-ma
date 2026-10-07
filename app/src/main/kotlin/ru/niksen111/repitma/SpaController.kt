@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping
 class SpaController {
     @GetMapping(value = [
         "/login", "/register", "/account", "/privacy", "/students", "/learning", "/courses/{courseId}",
-        "/reviews/new"
+        "/reviews/new", "/schedule"
     ])
     fun frontend(): String = "forward:/index.html"
 }

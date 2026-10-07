@@ -34,6 +34,7 @@ class FileService(
         requireOwner(courseId, type, ownerId)
         return when (type) {
             FileOwnerType.LESSON -> lessonMapper.findFiles(ownerId)
+            FileOwnerType.RECEIPT -> lessonMapper.findReceipts(ownerId)
             FileOwnerType.TASK -> taskMapper.findFiles(ownerId)
             FileOwnerType.SOLUTION -> solutionMapper.findFiles(ownerId)
         }
@@ -63,6 +64,7 @@ class FileService(
         val fileId = requireNotNull(file.id)
         when (type) {
             FileOwnerType.LESSON -> lessonMapper.attachFile(ownerId, fileId)
+            FileOwnerType.RECEIPT -> lessonMapper.attachReceipt(ownerId, fileId)
             FileOwnerType.TASK -> taskMapper.attachFile(ownerId, fileId)
             FileOwnerType.SOLUTION -> solutionMapper.attachFile(ownerId, fileId)
         }
@@ -101,6 +103,7 @@ class FileService(
     internal fun deleteAttachments(type: FileOwnerType, ownerId: Long) {
         val files = when (type) {
             FileOwnerType.LESSON -> lessonMapper.findFiles(ownerId)
+            FileOwnerType.RECEIPT -> lessonMapper.findReceipts(ownerId)
             FileOwnerType.TASK -> taskMapper.findFiles(ownerId)
             FileOwnerType.SOLUTION -> solutionMapper.findFiles(ownerId)
         }
@@ -113,6 +116,7 @@ class FileService(
     private fun detach(type: FileOwnerType, ownerId: Long, fileId: Long) {
         when (type) {
             FileOwnerType.LESSON -> lessonMapper.detachFile(ownerId, fileId)
+            FileOwnerType.RECEIPT -> lessonMapper.detachReceipt(ownerId, fileId)
             FileOwnerType.TASK -> taskMapper.detachFile(ownerId, fileId)
             FileOwnerType.SOLUTION -> solutionMapper.detachFile(ownerId, fileId)
         }
@@ -125,7 +129,7 @@ class FileService(
         ownerId: Long,
     ) {
         when (type) {
-            FileOwnerType.LESSON -> {
+            FileOwnerType.LESSON, FileOwnerType.RECEIPT -> {
                 access.requireTeacher(username, courseId)
                 access.lesson(courseId, ownerId)
             }
@@ -148,7 +152,7 @@ class FileService(
 
     private fun requireOwner(courseId: Long, type: FileOwnerType, ownerId: Long) {
         when (type) {
-            FileOwnerType.LESSON -> access.lesson(courseId, ownerId)
+            FileOwnerType.LESSON, FileOwnerType.RECEIPT -> access.lesson(courseId, ownerId)
             FileOwnerType.TASK -> access.task(courseId, ownerId)
             FileOwnerType.SOLUTION -> access.solution(courseId, ownerId)
         }
@@ -157,6 +161,7 @@ class FileService(
     private fun requireAttachment(type: FileOwnerType, ownerId: Long, fileId: Long) {
         val attached = when (type) {
             FileOwnerType.LESSON -> lessonMapper.containsFile(ownerId, fileId)
+            FileOwnerType.RECEIPT -> lessonMapper.containsReceipt(ownerId, fileId)
             FileOwnerType.TASK -> taskMapper.containsFile(ownerId, fileId)
             FileOwnerType.SOLUTION -> solutionMapper.containsFile(ownerId, fileId)
         }

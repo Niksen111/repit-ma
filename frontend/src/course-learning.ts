@@ -1,5 +1,6 @@
 import { type Profile } from './auth-api.ts'
 import { CourseApi, type Attachment, type Lesson, type OwnerType, type Solution, type Task } from './courses-api.ts'
+import { bindLessonManagement, lessonDate, lessonStatus, receiptsMarkup, statusBadge, trackingMarkup } from './lesson-management.ts'
 
 const escape = (value: string | null): string => (value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 const description = (value: string | null): string => value ? `<p class="material-description">${escape(value)}</p>` : ''
@@ -9,7 +10,7 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
   const api = new CourseApi(courseId)
   const teacher = profile.role === 'TEACHER' || profile.role === 'ADMIN'
   let lessons: Lesson[] = []
-  let selected: number | null = null
+  let selected: number | null = Number(new URLSearchParams(window.location.search).get('lesson')) || null
   let revision = 0
 
   root.innerHTML = `<div class="materials-heading"><h2>Занятия</h2>${teacher ? '<button class="primary-button" id="add-lesson" type="button">Добавить занятие</button>' : ''}</div><p class="status" id="learning-message" role="status"></p><div id="lesson-list"></div><div id="lesson-detail" aria-live="polite"></div><dialog class="material-dialog"><form id="material-editor"><h2></h2><div id="editor-fields"></div><p class="status error" role="status"></p><div class="form-actions"><button class="primary-button" type="submit">Сохранить</button><button class="secondary-button" type="button" id="close-editor">Отмена</button></div></form></dialog>`
@@ -50,11 +51,11 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
   const textData = (data: FormData) => ({ title: String(data.get('title')).trim(), description: String(data.get('description') ?? '').trim() || null })
 
   function lessonEditor(lesson?: Lesson): void {
-    const now = new Date()
+    const now = new Date(Date.now() + 3 * 60 * 60 * 1000)
     const pad = (value: number) => String(value).padStart(2, '0')
-    const scheduledDate = lesson?.scheduledAt.slice(0, 10) ?? `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+    const scheduledDate = lesson?.scheduledAt.slice(0, 10) ?? `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}`
     const scheduledTime = lesson?.scheduledAt.slice(11, 16) ?? ''
-    openEditor(lesson ? 'Редактировать занятие' : 'Новое занятие', textFields(lesson) + `<div class="lesson-schedule-fields"><label>Дата занятия<input type="date" name="scheduledDate" required value="${escape(scheduledDate)}"></label><label>Время занятия<input type="time" name="scheduledTime" step="60" required value="${escape(scheduledTime)}"></label></div>`, async data => {
+    openEditor(lesson ? 'Редактировать занятие' : 'Новое занятие', textFields(lesson) + `<div class="lesson-schedule-fields"><label>Дата занятия<input type="date" name="scheduledDate" required value="${escape(scheduledDate)}"></label><label>Время занятия (МСК)<input type="time" name="scheduledTime" step="60" required value="${escape(scheduledTime)}"></label></div>`, async data => {
       const scheduledAt = `${data.get('scheduledDate')}T${String(data.get('scheduledTime')).slice(0, 5)}:00`
       const saved = await api.request<Lesson>(lesson ? `/lessons/${lesson.id}` : '/lessons', lesson ? 'PUT' : 'POST', { ...textData(data), scheduledAt })
       selected = saved.id
@@ -64,7 +65,7 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
   root.querySelector('#add-lesson')?.addEventListener('click', () => lessonEditor())
 
   function drawList(): void {
-    list.innerHTML = lessons.length ? lessons.map(lesson => `<button type="button" class="lesson-row ${selected === lesson.id ? 'selected' : ''}" data-lesson="${lesson.id}" aria-pressed="${selected === lesson.id}"><span>${escape(lesson.title)}</span><time datetime="${escape(lesson.scheduledAt)}">${escape(date(lesson.scheduledAt))}</time></button>`).join('') : `<div class="empty-list"><h3>Занятий пока нет</h3><p>${teacher ? 'Добавьте первое занятие, затем прикрепите теорию и домашнее задание.' : 'Здесь появятся занятия и материалы от преподавателя.'}</p></div>`
+    list.innerHTML = lessons.length ? lessons.map(lesson => `<button type="button" class="lesson-row ${selected === lesson.id ? 'selected' : ''}" data-lesson="${lesson.id}" aria-pressed="${selected === lesson.id}"><span>${escape(lesson.title)}</span><time datetime="${escape(lesson.scheduledAt)}+03:00">${escape(lessonDate(lesson.scheduledAt))} МСК</time>${statusBadge(lesson)}</button>`).join('') : `<div class="empty-list"><h3>Занятий пока нет</h3><p>${teacher ? 'Добавьте первое занятие, затем прикрепите теорию и домашнее задание.' : 'Здесь появятся занятия и материалы от преподавателя.'}</p></div>`
     list.querySelectorAll<HTMLButtonElement>('[data-lesson]').forEach(button => button.addEventListener('click', () => {
       selected = Number(button.dataset.lesson)
       drawList()
@@ -96,9 +97,10 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
     if (!lesson) { detail.innerHTML = ''; return }
     detail.innerHTML = '<p class="status">Загрузка материалов…</p>'
     try {
-      const [files, tasks] = await Promise.all([
+      const [files, tasks, receipts] = await Promise.all([
         api.request<Attachment[]>(api.filesPath('LESSON', lesson.id)),
         api.request<Task[]>(`/lessons/${lesson.id}/tasks`),
+        api.request<Attachment[]>(api.filesPath('RECEIPT', lesson.id)),
       ])
       const taskDetails = await Promise.all(tasks.map(async task => {
         const [taskFiles, solution] = await Promise.all([
@@ -109,12 +111,13 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
         return { task, taskFiles, solution, solutionFiles }
       }))
       if (version !== revision) return
-      detail.innerHTML = `<article class="lesson-card"><div class="materials-heading"><h2>${escape(lesson.title)}</h2>${teacher ? '<div class="material-actions"><button type="button" class="secondary-button" id="edit-lesson">Редактировать</button><button type="button" class="danger-button" id="delete-lesson">Удалить</button></div>' : ''}</div><p class="muted">${escape(date(lesson.scheduledAt))}</p>${description(lesson.description)}${filesMarkup(files, 'LESSON', lesson.id, teacher)}<div class="materials-heading homework-heading"><h3>Домашние задания</h3>${teacher ? '<button class="secondary-button" type="button" id="add-task">Добавить домашку</button>' : ''}</div>${tasks.length ? '' : '<p class="muted">Домашних заданий пока нет</p>'}<div id="homework-list">${taskDetails.map(({ task, taskFiles, solution, solutionFiles }) => {
+      detail.innerHTML = `<article class="lesson-card" data-lesson-management><div class="materials-heading"><h2>${escape(lesson.title)}</h2>${teacher ? '<div class="material-actions"><button type="button" class="secondary-button" id="edit-lesson">Редактировать</button><button type="button" class="danger-button" id="delete-lesson">Удалить</button></div>' : ''}</div><div class="lesson-meta"><time class="muted" datetime="${escape(lesson.scheduledAt)}+03:00">${escape(lessonDate(lesson.scheduledAt))} МСК</time>${trackingMarkup(lesson, teacher, true)}</div><p class="status" role="status" data-tracking-message></p>${description(lesson.description)}${filesMarkup(files, 'LESSON', lesson.id, teacher)}${receiptsMarkup(receipts, teacher)}<div class="materials-heading homework-heading"><h3>Домашние задания</h3>${teacher ? '<button class="secondary-button" type="button" id="add-task">Добавить домашку</button>' : ''}</div>${tasks.length ? '' : '<p class="muted">Домашних заданий пока нет</p>'}<div id="homework-list">${taskDetails.map(({ task, taskFiles, solution, solutionFiles }) => {
         const editable = profile.role === 'STUDENT' && (solution === null || solution.grade === null)
         const status = !solution ? 'Не отправлено' : solution.grade === null ? 'Ожидает проверки' : solution.grade ? 'Зачёт' : 'Незачёт'
         return `<article class="homework-card" data-task="${task.id}"><div class="materials-heading"><h3>${escape(task.title)}</h3>${teacher ? '<div class="material-actions"><button class="secondary-button" type="button" data-edit-task>Редактировать</button><button class="danger-button" type="button" data-delete-task>Удалить</button></div>' : ''}</div>${description(task.description)}${filesMarkup(taskFiles, 'TASK', task.id, teacher)}<section class="solution-section"><div class="materials-heading"><h4>Решение</h4><span class="grade-badge ${solution?.grade === true ? 'passed' : solution?.grade === false ? 'failed' : ''}">${status}</span></div>${description(solution?.description ?? null)}${solution ? filesMarkup(solutionFiles, 'SOLUTION', solution.id, editable) : ''}${solution?.teacherComment ? `<div class="teacher-comment"><h4>Комментарий преподавателя</h4>${description(solution.teacherComment)}</div>` : ''}${solution?.gradedAt ? `<p class="muted">Проверено: ${escape(date(solution.gradedAt))}</p>` : ''}${editable ? `<button class="primary-button" type="button" data-solution>${solution ? 'Редактировать решение' : 'Отправить решение'}</button>${!solution ? '<p class="muted">Можно отправить ответ текстом или сохранить решение и прикрепить файлы.</p>' : ''}` : profile.role === 'STUDENT' ? '<p class="muted">Решение оценено. Редактирование закрыто.</p>' : ''}${teacher && solution ? '<button class="primary-button" type="button" data-grade>Оценить решение</button>' : ''}</section><p class="status" role="status" data-task-message></p></article>`
       }).join('')}</div><p class="status" role="status" id="detail-message"></p></article>`
       const detailMessage = detail.querySelector<HTMLElement>('#detail-message')!
+      bindLessonManagement(detail.querySelector<HTMLElement>('[data-lesson-management]')!, api, lesson, receipts, loadLessons)
       detail.querySelector('#edit-lesson')?.addEventListener('click', () => lessonEditor(lesson))
       detail.querySelector<HTMLButtonElement>('#delete-lesson')?.addEventListener('click', event => {
         if (!confirm('Удалить занятие вместе со всеми домашками, решениями и файлами?')) return
@@ -179,5 +182,14 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
       detail.querySelector('button')!.addEventListener('click', () => void loadDetail())
     }
   }
+  const timer = window.setInterval(() => {
+    if (!root.isConnected) { window.clearInterval(timer); return }
+    if (dialog.open || root.contains(document.activeElement) || root.querySelector('input:disabled, select:disabled, button:disabled')) return
+    if (lessons.some(lesson => lesson.status !== lessonStatus(lesson))) {
+      lessons = lessons.map(lesson => ({ ...lesson, status: lessonStatus(lesson) }))
+      drawList()
+      void loadDetail()
+    }
+  }, 30_000)
   void loadLessons()
 }

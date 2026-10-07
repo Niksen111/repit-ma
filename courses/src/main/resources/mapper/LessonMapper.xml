@@ -9,6 +9,8 @@
         <result property="title" column="title"/>
         <result property="description" column="description"/>
         <result property="scheduledAt" column="scheduled_at"/>
+        <result property="outcome" column="outcome"/>
+        <result property="paid" column="paid"/>
     </resultMap>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
@@ -29,14 +31,18 @@
         WHERE id = #{lessonId}
     </delete>
 
+    <update id="updateTracking">
+        UPDATE lessons SET outcome = #{outcome}, paid = #{paid} WHERE id = #{id}
+    </update>
+
     <select id="findById" resultMap="lesson">
-        SELECT id, course_id, title, description, scheduled_at
+        SELECT id, course_id, title, description, scheduled_at, outcome, paid
         FROM lessons
         WHERE id = #{lessonId}
     </select>
 
     <select id="findByCourse" resultMap="lesson">
-        SELECT id, course_id, title, description, scheduled_at
+        SELECT id, course_id, title, description, scheduled_at, outcome, paid
         FROM lessons
         WHERE course_id = #{courseId}
         ORDER BY scheduled_at, id
@@ -66,5 +72,29 @@
         JOIN lesson_files link ON link.file_id = f.id
         WHERE link.lesson_id = #{lessonId}
         ORDER BY f.id
+    </select>
+
+    <insert id="attachReceipt">
+        INSERT INTO lesson_receipts (lesson_id, file_id)
+        VALUES (#{lessonId}, #{fileId})
+    </insert>
+
+    <delete id="detachReceipt">
+        DELETE FROM lesson_receipts
+        WHERE lesson_id = #{lessonId} AND file_id = #{fileId}
+    </delete>
+
+    <select id="containsReceipt" resultType="boolean">
+        SELECT EXISTS(
+        SELECT 1
+        FROM lesson_receipts
+        WHERE lesson_id = #{lessonId} AND file_id = #{fileId})
+    </select>
+
+    <select id="findReceipts" resultMap="ru.niksen111.repitma.courses.mapper.FileMapper.fileResponse">
+        SELECT f.id, f.original_name, f.content_type
+        FROM course_files f
+        JOIN lesson_receipts link ON link.file_id = f.id
+        WHERE link.lesson_id = #{lessonId} ORDER BY f.id
     </select>
 </mapper>

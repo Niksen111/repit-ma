@@ -4,6 +4,7 @@ import { mountReviews, renderReviews } from './reviews.ts'
 import { getTeacherSite, renderTeacherContacts, teacherSites, type TeacherSite } from './teacher-site.ts'
 import { renderOlgaHome } from './olga-home.ts'
 import { mountCourseLearning } from './course-learning.ts'
+import { mountTeacherSchedule } from './teacher-schedule.ts'
 import { getCourse, getCourses, getProfile, getTeachers, login, logout, register, updateProfile, type CourseSummary, type Profile, type TeacherSummary, type UserRole } from './auth-api.ts'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -19,8 +20,9 @@ function header(profile: Profile | null): string {
   const registrationLink = canRegister ? '<a href="/register">Регистрация</a>' : ''
   const studentsLink = profile?.role === 'TEACHER' || profile?.role === 'ADMIN' ? '<a href="/students">Ученики</a>' : ''
   const learningLink = profile?.role === 'STUDENT' ? '<a href="/learning">Обучение</a>' : ''
+  const scheduleLink = profile?.role === 'TEACHER' || profile?.role === 'ADMIN' ? '<a href="/schedule">Расписание</a>' : ''
   const links = profile
-    ? `<a href="/">Главная</a>${studentsLink}${learningLink}${registrationLink}<a href="/account">Аккаунт</a><button id="logout" type="button">Выйти</button>`
+    ? `<a href="/">Главная</a>${studentsLink}${learningLink}${scheduleLink}${registrationLink}<a href="/account">Аккаунт</a><button id="logout" type="button">Выйти</button>`
     : '<a href="/">Главная</a><a class="login-link" href="/login">Войти</a>'
   return `<header class="site-header"><a class="logo" href="/">repit<span>ma</span></a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-navigation" aria-label="Открыть меню"><span></span><span></span><span></span></button><nav id="main-navigation" aria-label="Основная навигация">${links}</nav></header>`
 }
@@ -344,6 +346,17 @@ async function start(): Promise<void> {
     }
     const courses = await getCourses().catch(() => [])
     renderStudents(profile, courses)
+    return
+  }
+  if (path === '/schedule') {
+    if (!profile || (profile.role !== 'TEACHER' && profile.role !== 'ADMIN')) {
+      window.location.href = profile ? '/account' : '/login'
+      return
+    }
+    document.title = 'Расписание — Repitma'
+    app.innerHTML = `${header(profile)}<main><section class="students-page schedule-page"><p class="eyebrow">Занятия и оплата</p><h1>Расписание</h1><div id="teacher-schedule"></div></section></main>${footer()}`
+    bindHeader()
+    mountTeacherSchedule(document.querySelector<HTMLElement>('#teacher-schedule')!)
     return
   }
   if (path === '/learning') {

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import ru.niksen111.repitma.courses.dto.LessonRequest
 import ru.niksen111.repitma.courses.dto.LessonResponse
+import ru.niksen111.repitma.courses.dto.LessonTrackingRequest
 import ru.niksen111.repitma.courses.service.LessonService
 import ru.niksen111.repitma.users.security.CurrentUsername
 
@@ -44,6 +45,14 @@ class LessonsController(
         @PathVariable lessonId: Long,
         @Valid @RequestBody request: LessonRequest,
     ): LessonResponse = lessonService.update(username, courseId, lessonId, request)
+
+    @PutMapping("/lessons/{lessonId}/tracking")
+    fun track(
+        @CurrentUsername username: String,
+        @PathVariable courseId: Long,
+        @PathVariable lessonId: Long,
+        @RequestBody request: LessonTrackingRequest,
+    ): LessonResponse = lessonService.track(username, courseId, lessonId, request)
 
     @DeleteMapping("/lessons/{lessonId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

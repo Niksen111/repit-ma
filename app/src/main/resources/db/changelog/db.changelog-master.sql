@@ -140,3 +140,20 @@ CREATE TABLE solution_files (
 --rollback DROP TABLE tasks;
 --rollback DROP INDEX ix_lessons_course_scheduled;
 --rollback DROP TABLE lessons;
+
+--changeset niksen111:007-lesson-tracking-and-receipts
+ALTER TABLE lessons ADD COLUMN outcome TEXT NOT NULL DEFAULT 'AUTO'
+    CHECK (outcome IN ('AUTO', 'HELD', 'CANCELLED'));
+ALTER TABLE lessons ADD COLUMN paid INTEGER NOT NULL DEFAULT 0 CHECK (paid IN (0, 1));
+
+CREATE TABLE lesson_receipts (
+    lesson_id INTEGER NOT NULL,
+    file_id INTEGER NOT NULL,
+    PRIMARY KEY (lesson_id, file_id),
+    FOREIGN KEY (lesson_id) REFERENCES lessons (id),
+    FOREIGN KEY (file_id) REFERENCES course_files (id)
+);
+
+--rollback DROP TABLE lesson_receipts;
+--rollback ALTER TABLE lessons DROP COLUMN paid;
+--rollback ALTER TABLE lessons DROP COLUMN outcome;

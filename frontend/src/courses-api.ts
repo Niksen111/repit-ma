@@ -1,10 +1,13 @@
 import { getAuthorization } from './auth-api.ts'
 
-export interface Lesson { id: number; title: string; description: string | null; scheduledAt: string }
+export type LessonStatus = 'SCHEDULED' | 'PAST' | 'HELD' | 'CANCELLED'
+export type LessonOutcome = 'AUTO' | 'HELD' | 'CANCELLED'
+export interface Lesson { id: number; title: string; description: string | null; scheduledAt: string; status: LessonStatus; paid: boolean }
+export interface ScheduledLesson { courseId: number; academicYear: string; studentUsername: string; studentName: string | null; lesson: Lesson; receipts: Attachment[] }
 export interface Task { id: number; lessonId: number; title: string; description: string | null }
 export interface Solution { id: number; taskId: number; description: string | null; grade: boolean | null; teacherComment: string | null; gradedAt: string | null }
 export interface Attachment { id: number; originalName: string; contentType: string }
-export type OwnerType = 'LESSON' | 'TASK' | 'SOLUTION'
+export type OwnerType = 'LESSON' | 'TASK' | 'SOLUTION' | 'RECEIPT'
 
 export class CourseApi {
   private courseId: number

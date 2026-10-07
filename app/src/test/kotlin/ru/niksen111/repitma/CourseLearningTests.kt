@@ -18,6 +18,10 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import ru.niksen111.repitma.courses.dto.FileOwnerType
+import ru.niksen111.repitma.courses.dto.toResponse
+import ru.niksen111.repitma.courses.entity.Lesson
+import ru.niksen111.repitma.courses.entity.LessonOutcome
+import ru.niksen111.repitma.courses.entity.LessonStatus
 import ru.niksen111.repitma.courses.mapper.CourseMapper
 import ru.niksen111.repitma.courses.service.FileService
 import ru.niksen111.repitma.users.entity.UserAccount
@@ -26,6 +30,7 @@ import ru.niksen111.repitma.users.mapper.UserMapper
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
 import java.util.UUID
+import java.time.LocalDateTime
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -394,6 +399,99 @@ class CourseLearningTests(
                 .param("ownerId", lessonId.toString())
                 .with(auth(teacher)),
         ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `automatic status changes at the scheduled time and explicit outcomes survive`() {
+        val start = LocalDateTime.parse("2026-10-07T16:00:00")
+        val lesson = Lesson(1, courseId, "Занятие", null, start.toString())
+        assertEquals(LessonStatus.SCHEDULED, lesson.toResponse(start.minusNanos(1)).status)
+        assertEquals(LessonStatus.PAST, lesson.toResponse(start).status)
+        assertEquals(LessonStatus.PAST, lesson.toResponse(start.plusDays(1)).status)
+        assertEquals(LessonStatus.CANCELLED, lesson.copy(outcome = LessonOutcome.CANCELLED).toResponse(start.minusDays(1)).status)
+        assertEquals(LessonStatus.CANCELLED, lesson.copy(outcome = LessonOutcome.CANCELLED).toResponse(start.plusDays(1)).status)
+        assertEquals(LessonStatus.HELD, lesson.copy(outcome = LessonOutcome.HELD).toResponse(start.plusDays(1)).status)
+    }
+
+    @Test
+    fun `tracking validates future lessons and preserves independent status and payment edits`() {
+        val future = write("POST", "$base/lessons", teacher, """{"title":"Будущее","scheduledAt":"2999-01-01T16:00"}""", 201)
+        val futureId = future["id"].asLong()
+        assertEquals("SCHEDULED", future["status"].asString())
+        assertFalse(future["paid"].asBoolean())
+        write("PUT", "$base/lessons/$futureId/tracking", teacher, """{"outcome":"HELD"}""", 400)
+        assertEquals("CANCELLED", write("PUT", "$base/lessons/$futureId/tracking", teacher, """{"outcome":"CANCELLED"}""", 200)["status"].asString())
+        assertEquals("SCHEDULED", write("PUT", "$base/lessons/$futureId/tracking", teacher, """{"outcome":"AUTO"}""", 200)["status"].asString())
+
+        val past = write("POST", "$base/lessons", teacher, """{"title":"Прошлое","scheduledAt":"2000-01-01T16:00"}""", 201)
+        val pastId = past["id"].asLong()
+        val tracking = "$base/lessons/$pastId/tracking"
+        assertEquals("PAST", past["status"].asString())
+        val held = write("PUT", tracking, teacher, """{"outcome":"HELD","paid":true}""", 200)
+        assertEquals("HELD", held["status"].asString())
+        assertTrue(held["paid"].asBoolean())
+        val unpaid = write("PUT", tracking, teacher, """{"paid":false}""", 200)
+        assertEquals("HELD", unpaid["status"].asString())
+        assertFalse(unpaid["paid"].asBoolean())
+        write("PUT", tracking, teacher, """{"paid":true}""", 200)
+        val cancelled = write("PUT", tracking, teacher, """{"outcome":"CANCELLED"}""", 200)
+        assertTrue(cancelled["paid"].asBoolean())
+        assertEquals("CANCELLED", cancelled["status"].asString())
+        write("PUT", tracking, teacher, "{}", 400)
+        write("PUT", tracking, teacher, """{"outcome":"UNKNOWN"}""", 400)
+        write("PUT", tracking, student, """{"paid":false}""", 403)
+        write("PUT", tracking, outsider, """{"outcome":"HELD"}""", 404)
+        write("PUT", "/api/courses/$otherCourseId/lessons/$pastId/tracking", teacher, """{"paid":false}""", 404)
+        assertEquals("PAST", write("PUT", tracking, teacher, """{"outcome":"AUTO"}""", 200)["status"].asString())
+        write("PUT", tracking, teacher, """{"outcome":"HELD"}""", 200)
+        write("PUT", "$base/lessons/$pastId", teacher, """{"title":"Перенос","scheduledAt":"2999-01-01T16:00"}""", 400)
+        write("PUT", tracking, teacher, """{"outcome":"AUTO"}""", 200)
+        val moved = write("PUT", "$base/lessons/$pastId", teacher, """{"title":"Перенос","scheduledAt":"2999-01-01T16:00"}""", 200)
+        assertEquals("SCHEDULED", moved["status"].asString())
+        assertTrue(moved["paid"].asBoolean())
+        assertTrue(read("$base/lessons", student).single { it["id"].asLong() == pastId }["paid"].asBoolean())
+    }
+
+    @Test
+    fun `schedule is restricted to teachers and their own courses and includes receipts`() {
+        val lessonId = createLesson()["id"].asLong()
+        val receiptId = upload("RECEIPT", lessonId, teacher)["id"].asLong()
+        write("PUT", "$base/lessons/$lessonId/tracking", teacher, """{"outcome":"CANCELLED","paid":true}""", 200)
+        val entries = read("/api/schedule", teacher)
+        assertEquals(1, entries.size())
+        assertEquals(courseId, entries[0]["courseId"].asLong())
+        assertEquals(student.username, entries[0]["studentUsername"].asString())
+        assertEquals("CANCELLED", entries[0]["lesson"]["status"].asString())
+        assertTrue(entries[0]["lesson"]["paid"].asBoolean())
+        assertEquals(receiptId, entries[0]["receipts"][0]["id"].asLong())
+        val otherTeacher = createUser(UserRole.TEACHER)
+        assertEquals(0, read("/api/schedule", otherTeacher).size())
+        mvc.perform(get("/api/schedule").with(auth(student))).andExpect(status().isForbidden)
+        mvc.perform(get("/api/schedule")).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `receipts are separate from materials visible to the student and writable only by the teacher`() {
+        val lessonId = createLesson()["id"].asLong()
+        val receiptId = upload("RECEIPT", lessonId, teacher)["id"].asLong()
+        val params = "ownerType=RECEIPT&ownerId=$lessonId"
+        assertEquals(0, read("$base/files?ownerType=LESSON&ownerId=$lessonId", student).size())
+        assertEquals(receiptId, read("$base/files?$params", student)[0]["id"].asLong())
+        val download = mvc.perform(get("$base/files/$receiptId?$params").with(auth(student)))
+            .andExpect(status().isOk).andReturn().response
+        assertEquals("answer", download.contentAsString)
+        upload("RECEIPT", lessonId, student, 403)
+        upload("RECEIPT", lessonId, outsider, 404)
+        mvc.perform(delete("$base/files/$receiptId?$params").with(auth(student))).andExpect(status().isForbidden)
+        mvc.perform(get("$base/files/$receiptId?$params").with(auth(outsider))).andExpect(status().isNotFound)
+        mvc.perform(get("/api/courses/$otherCourseId/files/$receiptId?$params").with(auth(teacher))).andExpect(status().isNotFound)
+        mvc.perform(delete("$base/files/$receiptId?$params").with(auth(teacher))).andExpect(status().isNoContent)
+        assertEquals(0, count("SELECT COUNT(*) FROM course_files WHERE id = $receiptId"))
+
+        val secondReceipt = upload("RECEIPT", lessonId, teacher)["id"].asLong()
+        mvc.perform(delete("$base/lessons/$lessonId").with(auth(teacher))).andExpect(status().isNoContent)
+        assertEquals(0, count("SELECT COUNT(*) FROM lesson_receipts WHERE lesson_id = $lessonId"))
+        assertEquals(0, count("SELECT COUNT(*) FROM course_files WHERE id = $secondReceipt"))
     }
 
     private fun createLesson(): JsonNode =

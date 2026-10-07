@@ -9,6 +9,7 @@ import ru.niksen111.repitma.courses.entity.Lesson
 interface LessonMapper {
     fun insert(lesson: Lesson): Int
     fun update(lesson: Lesson): Int
+    fun updateTracking(lesson: Lesson): Int
     fun delete(@Param("lessonId") lessonId: Long): Int
     fun findById(@Param("lessonId") lessonId: Long): Lesson?
     fun findByCourse(@Param("courseId") courseId: Long): List<Lesson>
@@ -29,5 +30,10 @@ interface LessonMapper {
     ): Boolean
 
     fun findFiles(@Param("lessonId") lessonId: Long): List<FileResponse>
+
+    fun attachReceipt(@Param("lessonId") lessonId: Long, @Param("fileId") fileId: Long): Int
+    fun detachReceipt(@Param("lessonId") lessonId: Long, @Param("fileId") fileId: Long): Int
+    fun containsReceipt(@Param("lessonId") lessonId: Long, @Param("fileId") fileId: Long): Boolean
+    fun findReceipts(@Param("lessonId") lessonId: Long): List<FileResponse>
 
 }

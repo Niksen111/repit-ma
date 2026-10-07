@@ -36,6 +36,7 @@
         DELETE FROM course_files
         WHERE id = #{fileId}
           AND NOT EXISTS (SELECT 1 FROM lesson_files WHERE file_id = #{fileId})
+          AND NOT EXISTS (SELECT 1 FROM lesson_receipts WHERE file_id = #{fileId})
           AND NOT EXISTS (SELECT 1 FROM task_files WHERE file_id = #{fileId})
           AND NOT EXISTS (SELECT 1 FROM solution_files WHERE file_id = #{fileId})
     </delete>

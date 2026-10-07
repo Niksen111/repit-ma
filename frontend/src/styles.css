@@ -276,6 +276,55 @@ input, select { width: 100%; padding: 15px 16px; border: 1px solid #38453e66; bo
 @media (prefers-reduced-motion: reduce) { .menu-toggle span { transition: none; } }
 
 .course-materials, .lesson-card, .homework-card { min-width: 0; }
+.lesson-status { display: inline-flex; justify-self: start; width: fit-content; padding: 6px 12px; border-radius: 99px; background: #dce9df; color: #2d604e; font-size: 12px; font-weight: 700; }
+.lesson-status.scheduled { background: #ecece7; color: #59615d; }
+.lesson-status.past { background: #f5d7ae; color: #6b5a25; }
+.lesson-status.held { background: #dce9df; color: #23643a; }
+.lesson-status.cancelled { background: #f8ded6; color: #8f2e23; }
+.lesson-tracking-controls, .lesson-tracking-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; }
+.lesson-tracking-controls > label:first-child { flex: 1 1 180px; }
+.lesson-tracking-controls select { padding: 12px; }
+.lesson-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px; margin: 16px 0 20px; }
+.lesson-meta time { margin-right: auto; }
+.lesson-meta .lesson-tracking-controls, .lesson-meta .lesson-tracking-summary { gap: 8px; }
+.lesson-tracking-controls.compact select { width: auto; min-height: 36px; padding: 7px 28px 7px 12px; border: 0; cursor: pointer; font-size: 12px; }
+.lesson-tracking-controls.compact .payment-toggle { flex: 0 0 auto; gap: 8px; }
+.lesson-tracking-controls.compact .payment-toggle input { width: 16px; height: 16px; }
+.payment-status { display: inline-flex; align-items: center; min-height: 36px; padding: 7px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; }
+.payment-status.paid { background: #dce9df; color: #23643a; }
+.payment-status.unpaid { background: #ecece7; color: #59615d; }
+.payment-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.payment-toggle input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
+.receipt-section { margin: 20px 0; padding-top: 16px; border-top: 1px solid #38453e22; }
+.receipt-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.receipt-heading h4 { margin: 0; font-size: 13px; }
+.receipt-count { margin-left: 4px; color: #66706a; font-weight: 400; }
+.receipt-upload { position: relative; display: inline-flex; align-items: center; min-height: 36px; padding: 5px 10px; border: 1px solid #38453e33; border-radius: 99px; color: var(--accent); font-size: 12px; cursor: pointer; }
+.receipt-upload:hover { background: #edf1e9; }
+.receipt-upload:focus-within { outline: 3px solid #d9785f; outline-offset: 3px; }
+.receipt-upload:has(input:disabled) { opacity: .55; cursor: wait; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.receipt-list { display: grid; gap: 4px; margin: 8px 0 0; padding: 0; list-style: none; }
+.receipt-list li { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+.receipt-list .file-download { padding: 2px 0; }
+.receipt-empty { margin: 6px 0 0; }
+[data-tracking-message] { margin-top: 12px; }
+#teacher-schedule { margin-top: 28px; min-width: 0; }
+.schedule-filter { max-width: 300px; margin: 24px 0; }
+.schedule-table-scroll { width: 100%; overflow-x: auto; margin: 24px 0; border: 1px solid #38453e33; border-radius: 14px; }
+.schedule-table { width: 100%; min-width: 880px; border-collapse: collapse; background: #fffdf5; text-align: left; }
+.schedule-table caption { text-align: left; padding: 16px 20px; font-weight: 700; background: #edf1e9; }
+.schedule-table th, .schedule-table td { padding: 20px; vertical-align: top; border-bottom: 1px solid #38453e22; }
+.schedule-table th { font-size: 13px; background: #edf1e966; }
+.schedule-table tbody tr:last-child td { border-bottom: 0; }
+.schedule-table td:nth-child(1) { width: 20%; font-size: 14px; line-height: 1.6; }
+.schedule-table td:nth-child(2) { width: 24%; overflow-wrap: anywhere; }
+.schedule-table td:nth-child(3) { width: 26%; }
+.schedule-table td:nth-child(4) { width: 30%; }
+.schedule-table td > small { display: block; margin: 6px 0; color: #66706a; }
+.schedule-lesson-link { display: block; margin-top: 12px; text-decoration: underline; color: var(--accent); }
+.schedule-table .lesson-tracking-controls { margin-top: 14px; }
+.schedule-table .receipt-section { margin: 0; padding: 0; border: 0; }
 .materials-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 .materials-heading h2, .materials-heading h3, .materials-heading h4 { margin: 0; overflow-wrap: anywhere; }
 .materials-heading h2 { font-size: 24px; }
