@@ -1,0 +1,5 @@
+# Both public teacher sites use the same application container.
+repit-ma.ru, www.repit-ma.ru, okoroleva.repit-ma.ru {
+    encode zstd gzip
+    reverse_proxy app:8080
+}

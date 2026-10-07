@@ -38,6 +38,39 @@ h1 { max-width: 850px; margin: 0; font: 700 clamp(44px, 7vw, 86px)/1.03 Unbounde
 .teacher-photo-frame { width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 24px; box-shadow: 0 24px 60px #23382e24; }
 .teacher-photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .teacher-photo figcaption { margin-top: 14px; font-size: 13px; line-height: 1.5; opacity: .65; }
+.olga-question { font-weight: 700; }
+.olga-hero-copy { max-width: 600px; font-size: 17px; line-height: 1.75; color: #66706a; }
+.olga-photo .teacher-photo-frame { aspect-ratio: 3 / 4; }
+.olga-education { padding: clamp(24px, 3vw, 36px); border-radius: 22px; background: #edf1e9; }
+.olga-education .result-label { margin-bottom: 16px; }
+.olga-education h3 { max-width: 780px; margin: 0; font-size: clamp(20px, 2.4vw, 28px); line-height: 1.5; }
+.olga-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-top: 18px; }
+.olga-stats article { min-width: 0; padding: 24px; border: 1px solid #38453e33; border-radius: 20px; }
+.olga-stats strong { font: 700 clamp(25px, 3vw, 36px)/1.2 Unbounded, Arial, sans-serif; letter-spacing: -.04em; color: var(--accent); }
+.olga-stats p { margin: 16px 0 0; font-size: 14px; line-height: 1.6; }
+.olga-score { background: #fff9eacc; }
+.olga-score > strong { font: 700 clamp(44px, 5vw, 64px)/1.2 Unbounded, Arial, sans-serif; letter-spacing: -.04em; color: var(--accent); }
+.olga-score > strong span { font: 700 16px Manrope, Arial, sans-serif; letter-spacing: normal; }
+.olga-score p { margin: 18px 0 0; line-height: 1.7; }
+.olga-lessons { padding-top: 96px; padding-bottom: 104px; }
+.olga-principles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.olga-principles article { display: flex; align-items: start; gap: 18px; min-width: 0; padding: clamp(22px, 3vw, 32px); border-radius: 22px; background: #edf1e9; }
+.olga-principles article:last-child { grid-column: 1 / -1; background: #f5d7ae66; }
+.principle-number { flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--accent); padding-top: 4px; }
+.olga-principles h3 { margin: 0 0 14px; font-size: 19px; line-height: 1.4; }
+.olga-principles p { max-width: 720px; margin: 0; font-size: 15px; line-height: 1.75; }
+@media (max-width: 960px) { .olga-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .olga-lessons { padding-top: 68px; padding-bottom: 74px; }
+  .olga-principles { grid-template-columns: 1fr; }
+}
+@media (max-width: 400px) {
+  .olga-stats { gap: 12px; }
+  .olga-stats article { padding: 18px 14px; }
+  .olga-stats strong { font-size: 23px; }
+}
+@media (max-width: 560px) { .olga-page .teacher-contacts { grid-template-columns: 1fr; } }
+@media (max-width: 360px) { .olga-stats { grid-template-columns: 1fr; } }
 .teacher-results, .teacher-experience, .teacher-approach { padding-top: 96px; padding-bottom: 104px; }
 .teacher-results { border-top: 1px solid #38453e33; }
 .section-title { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 30px; align-items: end; margin-bottom: 44px; }
