@@ -156,6 +156,9 @@ label small { font-weight: 400; line-height: 1.5; opacity: .62; }
 .registration-title { max-width: none; font-size: clamp(34px, 4.7vw, 58px) !important; }
 .registration-title span { display: block; }
 .fixed-role { margin: 0; padding: 14px 16px; border-radius: 10px; background: #2d604e10; }
+.registration-credentials { display: block; margin: 10px 0 14px; white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; }
+.registration-copy { min-height: 40px; padding: 9px 16px; }
+.registration-copy-status { display: block; margin-top: 10px; font-size: 13px; }
 input, select { width: 100%; padding: 15px 16px; border: 1px solid #38453e66; border-radius: 10px; background: #fffdf5; font: inherit; }
 .primary-button { min-height: 44px; justify-self: start; padding: 13px 22px; border: 0; border-radius: 99px; background: var(--accent); color: white; font: 700 14px Manrope, Arial, sans-serif; cursor: pointer; }
 .primary-button:disabled { opacity: .55; }

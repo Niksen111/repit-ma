@@ -229,7 +229,32 @@ function renderRegistration(profile: Profile, teachers: TeacherSummary[], teache
       message.className = 'status success'
       const title = document.createElement('strong')
       title.textContent = 'Пользователь создан!'
-      message.replaceChildren(title, document.createElement('br'), `Логин: ${created.username}`)
+      const credentials = `Логин: ${created.username}\nПароль: ${password}`
+      const details = document.createElement('span')
+      details.className = 'registration-credentials'
+      details.textContent = credentials
+      const copyButton = document.createElement('button')
+      copyButton.type = 'button'
+      copyButton.className = 'secondary-button registration-copy'
+      copyButton.textContent = 'Скопировать логин и пароль'
+      const copyMessage = document.createElement('span')
+      copyMessage.className = 'status registration-copy-status'
+      copyMessage.setAttribute('role', 'status')
+      copyButton.addEventListener('click', async () => {
+        copyButton.disabled = true
+        copyMessage.textContent = ''
+        try {
+          await navigator.clipboard.writeText(credentials)
+          copyMessage.className = 'status registration-copy-status'
+          copyMessage.textContent = 'Логин и пароль скопированы'
+        } catch {
+          copyMessage.className = 'status error registration-copy-status'
+          copyMessage.textContent = 'Не удалось скопировать автоматически. Выделите логин и пароль и скопируйте вручную.'
+        } finally {
+          copyButton.disabled = false
+        }
+      })
+      message.replaceChildren(title, details, copyButton, copyMessage)
       form.reset()
     } catch (error) {
       message.className = 'status error'
