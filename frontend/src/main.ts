@@ -298,8 +298,16 @@ function renderCourse(profile: Profile, course: CourseSummary): void {
     return
   }
   document.title = `${course.name ?? course.username} — курс`
-  app.innerHTML = `${header(profile)}<main><section class="course-page"><a class="back-link" href="/students">← Все ученики</a><p class="eyebrow">Курс ${escapeHtml(course.academicYear)}</p><h1>${escapeHtml(course.name ?? course.username)}</h1><div class="course-layout"><dl><div><dt>Логин</dt><dd>${escapeHtml(course.username)}</dd></div><div><dt>Имя</dt><dd>${displayValue(course.name)}</dd></div><div><dt>Город</dt><dd>${displayValue(course.city)}</dd></div><div><dt>Класс</dt><dd>${course.grade ? `${course.grade} класс` : '<span class="empty-value">Не указано</span>'}</dd></div><div><dt>Контакт</dt><dd>${courseContact(course)}</dd></div></dl><div id="course-learning" class="course-materials"></div></div></section></main>${footer()}`
+  app.innerHTML = `${header(profile)}<main><section class="course-page student-course-page"><a class="back-link" href="/students">← Все ученики</a><p class="eyebrow">Курс ${escapeHtml(course.academicYear)}</p><h1>${escapeHtml(course.name ?? course.username)}</h1><div class="course-layout"><details class="student-course-details" open><summary>Об ученике${course.grade ? `<span class="student-course-grade"> · ${course.grade} класс</span>` : ''}</summary><dl><div><dt>Логин</dt><dd>${escapeHtml(course.username)}</dd></div><div><dt>Имя</dt><dd>${displayValue(course.name)}</dd></div><div><dt>Город</dt><dd>${displayValue(course.city)}</dd></div><div><dt>Класс</dt><dd>${course.grade ? `${course.grade} класс` : '<span class="empty-value">Не указано</span>'}</dd></div><div><dt>Контакт</dt><dd>${courseContact(course)}</dd></div></dl></details><div id="course-learning" class="course-materials"></div></div></section></main>${footer()}`
   bindHeader()
+  const studentDetails = document.querySelector<HTMLDetailsElement>('.student-course-details')!
+  const mobile = window.matchMedia('(max-width: 760px)')
+  const updateStudentDetails = () => {
+    if (!studentDetails.isConnected) { mobile.removeEventListener('change', updateStudentDetails); return }
+    studentDetails.open = !mobile.matches
+  }
+  updateStudentDetails()
+  mobile.addEventListener('change', updateStudentDetails)
   mountCourseLearning(document.querySelector<HTMLElement>('#course-learning')!, profile, course.id)
 }
 

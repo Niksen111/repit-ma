@@ -2,6 +2,7 @@ import { type Profile } from './auth-api.ts'
 import { CourseApi, type Attachment, type Lesson, type OwnerType, type Solution, type Task } from './courses-api.ts'
 import { bindLessonManagement, lessonDate, lessonStatus, receiptsMarkup, statusBadge, trackingMarkup } from './lesson-management.ts'
 import { mountLessonScheduling } from './recurring-lessons.ts'
+import { lessonPage, pageForLesson, selectLesson } from './lesson-navigation.ts'
 
 const escape = (value: string | null): string => (value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 const description = (value: string | null): string => value ? `<p class="material-description">${escape(value)}</p>` : ''
@@ -12,9 +13,11 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
   const teacher = profile.role === 'TEACHER' || profile.role === 'ADMIN'
   let lessons: Lesson[] = []
   let selected: number | null = Number(new URLSearchParams(window.location.search).get('lesson')) || null
+  let page = 1
   let revision = 0
 
-  root.innerHTML = `<div class="materials-heading"><h2>Занятия</h2></div>${teacher ? '<section class="course-scheduling" data-course-scheduling></section>' : ''}<p class="status" id="learning-message" role="status"></p><div id="lesson-list"></div><div id="lesson-detail" aria-live="polite"></div><dialog class="material-dialog"><form id="material-editor"><h2></h2><div id="editor-fields"></div><p class="status error" role="status"></p><div class="form-actions"><button class="primary-button" type="submit">Сохранить</button><button class="secondary-button" type="button" id="close-editor">Отмена</button></div></form></dialog>`
+  root.innerHTML = `<div class="materials-heading"><h2>Занятия</h2></div><div class="lesson-navigation"><details class="lesson-picker" id="lesson-picker"><summary>Выбрать занятие <span data-lesson-count></span></summary><div id="lesson-list"></div></details>${teacher ? '<details class="lesson-scheduling-picker"><summary>Расписание и новые занятия</summary><section class="course-scheduling" data-course-scheduling></section></details>' : ''}</div><p class="status" id="learning-message" role="status"></p><div id="lesson-detail" tabindex="-1" aria-live="polite"></div><dialog class="material-dialog"><form id="material-editor"><h2></h2><div id="editor-fields"></div><p class="status error" role="status"></p><div class="form-actions"><button class="primary-button" type="submit">Сохранить</button><button class="secondary-button" type="button" id="close-editor">Отмена</button></div></form></dialog>`
+  const picker = root.querySelector<HTMLDetailsElement>('#lesson-picker')!
   const list = root.querySelector<HTMLElement>('#lesson-list')!
   const detail = root.querySelector<HTMLElement>('#lesson-detail')!
   const message = root.querySelector<HTMLElement>('#learning-message')!
@@ -65,24 +68,55 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
   }
 
   function drawList(): void {
-    list.innerHTML = lessons.length ? lessons.map(lesson => `<button type="button" class="lesson-row ${selected === lesson.id ? 'selected' : ''}" data-lesson="${lesson.id}" aria-pressed="${selected === lesson.id}"><span>${escape(lesson.title)}</span><time datetime="${escape(lesson.scheduledAt)}+03:00">${escape(lessonDate(lesson.scheduledAt))} МСК</time>${statusBadge(lesson)}${lesson.recurringScheduleId ? '<small class="lesson-series-label">По недельному расписанию</small>' : ''}</button>`).join('') : `<div class="empty-list"><h3>Занятий пока нет</h3><p>${teacher ? 'Добавьте первое занятие, затем прикрепите теорию и домашнее задание.' : 'Здесь появятся занятия и материалы от преподавателя.'}</p></div>`
+    const visible = lessonPage(lessons, page)
+    page = visible.page
+    picker.querySelector('[data-lesson-count]')!.textContent = lessons.length ? `(${lessons.length})` : ''
+    picker.hidden = lessons.length === 0
+    if (!lessons.length) {
+      list.innerHTML = ''
+      return
+    }
+    list.innerHTML = `<p class="muted lesson-list-count" role="status">Занятия ${visible.start}–${visible.end} из ${lessons.length}</p><div class="lesson-rows">${visible.items.map(lesson => `<button type="button" class="lesson-row ${selected === lesson.id ? 'selected' : ''}" data-lesson="${lesson.id}" aria-pressed="${selected === lesson.id}"><span>${escape(lesson.title)}</span><time datetime="${escape(lesson.scheduledAt)}+03:00">${escape(lessonDate(lesson.scheduledAt))} МСК</time>${statusBadge(lesson)}${lesson.recurringScheduleId ? '<small class="lesson-series-label">По недельному расписанию</small>' : ''}</button>`).join('')}</div>${visible.totalPages > 1 ? `<nav class="lesson-pagination" aria-label="Страницы занятий"><button type="button" class="secondary-button" data-page="${page - 1}" ${page === 1 ? 'disabled' : ''} aria-label="Предыдущая страница занятий">← Назад</button><label><span class="visually-hidden">Страница занятий</span><select data-page-select>${Array.from({ length: visible.totalPages }, (_, index) => `<option value="${index + 1}" ${page === index + 1 ? 'selected' : ''}>${index + 1} из ${visible.totalPages}</option>`).join('')}</select></label><button type="button" class="secondary-button" data-page="${page + 1}" ${page === visible.totalPages ? 'disabled' : ''} aria-label="Следующая страница занятий">Далее →</button></nav>` : ''}`
     list.querySelectorAll<HTMLButtonElement>('[data-lesson]').forEach(button => button.addEventListener('click', () => {
       selected = Number(button.dataset.lesson)
       drawList()
+      picker.open = false
+      detail.focus({ preventScroll: true })
+      detail.scrollIntoView({ block: 'start' })
       void loadDetail()
     }))
+    list.querySelectorAll<HTMLButtonElement>('[data-page]').forEach(button => button.addEventListener('click', () => {
+      const direction = Number(button.dataset.page) < page ? -1 : 1
+      page = Number(button.dataset.page)
+      drawList()
+      const next = list.querySelector<HTMLButtonElement>(`[data-page="${page + direction}"]`)
+      if (next && !next.disabled) next.focus()
+      else list.querySelector<HTMLSelectElement>('[data-page-select]')?.focus()
+    }))
+    list.querySelector<HTMLSelectElement>('[data-page-select]')?.addEventListener('change', event => {
+      page = Number((event.currentTarget as HTMLSelectElement).value)
+      drawList()
+      list.querySelector<HTMLSelectElement>('[data-page-select]')!.focus()
+    })
   }
+  picker.addEventListener('toggle', () => {
+    if (picker.open && !list.querySelector('[data-retry-lessons]')) { page = pageForLesson(lessons, selected); drawList() }
+  })
 
   async function loadLessons(): Promise<void> {
     try {
       lessons = await api.request<Lesson[]>('/lessons')
       lessons.sort((a, b) => b.scheduledAt.localeCompare(a.scheduledAt))
-      if (!lessons.some(lesson => lesson.id === selected)) selected = lessons[0]?.id ?? null
+      selected = selectLesson(lessons, selected)
+      page = pageForLesson(lessons, selected)
+      message.textContent = ''
       drawList()
       await loadDetail()
     } catch (error) {
       report(error)
-      list.innerHTML = '<button class="secondary-button" type="button">Повторить загрузку</button>'
+      picker.hidden = false
+      picker.open = true
+      list.innerHTML = '<button class="secondary-button" type="button" data-retry-lessons>Повторить загрузку</button>'
       list.querySelector('button')!.addEventListener('click', () => { message.textContent = ''; void loadLessons() })
     }
   }
@@ -94,7 +128,10 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
   async function loadDetail(): Promise<void> {
     const version = ++revision
     const lesson = lessons.find(item => item.id === selected)
-    if (!lesson) { detail.innerHTML = ''; return }
+    if (!lesson) {
+      detail.innerHTML = `<div class="empty-list"><h3>Занятий пока нет</h3><p>${teacher ? 'Добавьте первое занятие через «Расписание и новые занятия», затем прикрепите теорию и домашнее задание.' : 'Здесь появятся занятия и материалы от преподавателя.'}</p></div>`
+      return
+    }
     detail.innerHTML = '<p class="status">Загрузка материалов…</p>'
     try {
       const [files, tasks, receipts] = await Promise.all([
@@ -184,7 +221,7 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
   }
   const timer = window.setInterval(() => {
     if (!root.isConnected) { window.clearInterval(timer); return }
-    if (dialog.open || root.contains(document.activeElement) || root.querySelector('input:disabled, select:disabled, button:disabled')) return
+    if (dialog.open || root.contains(document.activeElement) || root.querySelector('input:disabled, select:disabled, button:disabled:not([data-page])')) return
     if (lessons.some(lesson => lesson.status !== lessonStatus(lesson))) {
       lessons = lessons.map(lesson => ({ ...lesson, status: lessonStatus(lesson) }))
       drawList()
