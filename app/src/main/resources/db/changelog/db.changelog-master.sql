@@ -157,3 +157,49 @@ CREATE TABLE lesson_receipts (
 --rollback DROP TABLE lesson_receipts;
 --rollback ALTER TABLE lessons DROP COLUMN paid;
 --rollback ALTER TABLE lessons DROP COLUMN outcome;
+
+--changeset niksen111:008-recurring-lessons
+CREATE TABLE recurring_lesson_schedules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id INTEGER NOT NULL REFERENCES courses (id),
+    title TEXT NOT NULL,
+    description TEXT,
+    start_date TEXT NOT NULL,
+    end_date TEXT,
+    active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (end_date IS NULL OR end_date >= start_date)
+);
+CREATE INDEX ix_recurring_schedules_course ON recurring_lesson_schedules (course_id);
+
+CREATE TABLE recurring_lesson_slots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    schedule_id INTEGER NOT NULL REFERENCES recurring_lesson_schedules (id),
+    day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 1 AND 7),
+    start_time TEXT NOT NULL,
+    UNIQUE (schedule_id, day_of_week, start_time)
+);
+
+ALTER TABLE lessons ADD COLUMN recurring_schedule_id INTEGER REFERENCES recurring_lesson_schedules (id);
+CREATE INDEX ix_lessons_recurring_schedule ON lessons (recurring_schedule_id);
+
+-- Keep the original occurrence even if its lesson is moved, cancelled or deleted.
+CREATE TABLE recurring_lesson_occurrences (
+    slot_id INTEGER NOT NULL REFERENCES recurring_lesson_slots (id),
+    scheduled_at TEXT NOT NULL,
+    lesson_id INTEGER REFERENCES lessons (id) ON DELETE SET NULL,
+    PRIMARY KEY (slot_id, scheduled_at)
+);
+
+--rollback DROP TABLE recurring_lesson_occurrences;
+--rollback DROP INDEX ix_lessons_recurring_schedule;
+--rollback ALTER TABLE lessons DROP COLUMN recurring_schedule_id;
+--rollback DROP TABLE recurring_lesson_slots;
+--rollback DROP INDEX ix_recurring_schedules_course;
+--rollback DROP TABLE recurring_lesson_schedules;
+
+--changeset niksen111:009-edit-recurring-lessons
+-- Retain removed slots and their occurrence history when a schedule is edited.
+ALTER TABLE recurring_lesson_slots ADD COLUMN active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1));
+
+--rollback ALTER TABLE recurring_lesson_slots DROP COLUMN active;

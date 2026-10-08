@@ -19,4 +19,5 @@ dependencies {
     api 'org.springframework.security:spring-security-core'
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.1'
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
+    implementation 'io.github.oshai:kotlin-logging-jvm:8.0.4'
 }

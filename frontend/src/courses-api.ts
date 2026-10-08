@@ -2,7 +2,9 @@ import { getAuthorization } from './auth-api.ts'
 
 export type LessonStatus = 'SCHEDULED' | 'PAST' | 'HELD' | 'CANCELLED'
 export type LessonOutcome = 'AUTO' | 'HELD' | 'CANCELLED'
-export interface Lesson { id: number; title: string; description: string | null; scheduledAt: string; status: LessonStatus; paid: boolean }
+export interface Lesson { id: number; title: string; description: string | null; scheduledAt: string; status: LessonStatus; paid: boolean; recurringScheduleId: number | null }
+export interface RecurringLessonSlot { dayOfWeek: number; startTime: string }
+export interface RecurringLessonSchedule { id: number; courseId: number; title: string; description: string | null; startDate: string; endDate: string | null; active: boolean; slots: RecurringLessonSlot[] }
 export interface ScheduledLesson { courseId: number; academicYear: string; studentUsername: string; studentName: string | null; lesson: Lesson; receipts: Attachment[] }
 export interface Task { id: number; lessonId: number; title: string; description: string | null }
 export interface Solution { id: number; taskId: number; description: string | null; grade: boolean | null; teacherComment: string | null; gradedAt: string | null }

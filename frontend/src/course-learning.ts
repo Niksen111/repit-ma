@@ -1,6 +1,7 @@
 import { type Profile } from './auth-api.ts'
 import { CourseApi, type Attachment, type Lesson, type OwnerType, type Solution, type Task } from './courses-api.ts'
 import { bindLessonManagement, lessonDate, lessonStatus, receiptsMarkup, statusBadge, trackingMarkup } from './lesson-management.ts'
+import { mountLessonScheduling } from './recurring-lessons.ts'
 
 const escape = (value: string | null): string => (value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 const description = (value: string | null): string => value ? `<p class="material-description">${escape(value)}</p>` : ''
@@ -13,7 +14,7 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
   let selected: number | null = Number(new URLSearchParams(window.location.search).get('lesson')) || null
   let revision = 0
 
-  root.innerHTML = `<div class="materials-heading"><h2>Занятия</h2>${teacher ? '<button class="primary-button" id="add-lesson" type="button">Добавить занятие</button>' : ''}</div><p class="status" id="learning-message" role="status"></p><div id="lesson-list"></div><div id="lesson-detail" aria-live="polite"></div><dialog class="material-dialog"><form id="material-editor"><h2></h2><div id="editor-fields"></div><p class="status error" role="status"></p><div class="form-actions"><button class="primary-button" type="submit">Сохранить</button><button class="secondary-button" type="button" id="close-editor">Отмена</button></div></form></dialog>`
+  root.innerHTML = `<div class="materials-heading"><h2>Занятия</h2></div>${teacher ? '<section class="course-scheduling" data-course-scheduling></section>' : ''}<p class="status" id="learning-message" role="status"></p><div id="lesson-list"></div><div id="lesson-detail" aria-live="polite"></div><dialog class="material-dialog"><form id="material-editor"><h2></h2><div id="editor-fields"></div><p class="status error" role="status"></p><div class="form-actions"><button class="primary-button" type="submit">Сохранить</button><button class="secondary-button" type="button" id="close-editor">Отмена</button></div></form></dialog>`
   const list = root.querySelector<HTMLElement>('#lesson-list')!
   const detail = root.querySelector<HTMLElement>('#lesson-detail')!
   const message = root.querySelector<HTMLElement>('#learning-message')!
@@ -62,10 +63,9 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
       await loadLessons()
     })
   }
-  root.querySelector('#add-lesson')?.addEventListener('click', () => lessonEditor())
 
   function drawList(): void {
-    list.innerHTML = lessons.length ? lessons.map(lesson => `<button type="button" class="lesson-row ${selected === lesson.id ? 'selected' : ''}" data-lesson="${lesson.id}" aria-pressed="${selected === lesson.id}"><span>${escape(lesson.title)}</span><time datetime="${escape(lesson.scheduledAt)}+03:00">${escape(lessonDate(lesson.scheduledAt))} МСК</time>${statusBadge(lesson)}</button>`).join('') : `<div class="empty-list"><h3>Занятий пока нет</h3><p>${teacher ? 'Добавьте первое занятие, затем прикрепите теорию и домашнее задание.' : 'Здесь появятся занятия и материалы от преподавателя.'}</p></div>`
+    list.innerHTML = lessons.length ? lessons.map(lesson => `<button type="button" class="lesson-row ${selected === lesson.id ? 'selected' : ''}" data-lesson="${lesson.id}" aria-pressed="${selected === lesson.id}"><span>${escape(lesson.title)}</span><time datetime="${escape(lesson.scheduledAt)}+03:00">${escape(lessonDate(lesson.scheduledAt))} МСК</time>${statusBadge(lesson)}${lesson.recurringScheduleId ? '<small class="lesson-series-label">По недельному расписанию</small>' : ''}</button>`).join('') : `<div class="empty-list"><h3>Занятий пока нет</h3><p>${teacher ? 'Добавьте первое занятие, затем прикрепите теорию и домашнее задание.' : 'Здесь появятся занятия и материалы от преподавателя.'}</p></div>`
     list.querySelectorAll<HTMLButtonElement>('[data-lesson]').forEach(button => button.addEventListener('click', () => {
       selected = Number(button.dataset.lesson)
       drawList()
@@ -111,7 +111,7 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
         return { task, taskFiles, solution, solutionFiles }
       }))
       if (version !== revision) return
-      detail.innerHTML = `<article class="lesson-card" data-lesson-management><div class="materials-heading"><h2>${escape(lesson.title)}</h2>${teacher ? '<div class="material-actions"><button type="button" class="secondary-button" id="edit-lesson">Редактировать</button><button type="button" class="danger-button" id="delete-lesson">Удалить</button></div>' : ''}</div><div class="lesson-meta"><time class="muted" datetime="${escape(lesson.scheduledAt)}+03:00">${escape(lessonDate(lesson.scheduledAt))} МСК</time>${trackingMarkup(lesson, teacher, true)}</div><p class="status" role="status" data-tracking-message></p>${description(lesson.description)}${filesMarkup(files, 'LESSON', lesson.id, teacher)}${receiptsMarkup(receipts, teacher)}<div class="materials-heading homework-heading"><h3>Домашние задания</h3>${teacher ? '<button class="secondary-button" type="button" id="add-task">Добавить домашку</button>' : ''}</div>${tasks.length ? '' : '<p class="muted">Домашних заданий пока нет</p>'}<div id="homework-list">${taskDetails.map(({ task, taskFiles, solution, solutionFiles }) => {
+      detail.innerHTML = `<article class="lesson-card" data-lesson-management><div class="materials-heading"><h2>${escape(lesson.title)}</h2>${teacher ? '<div class="material-actions"><button type="button" class="secondary-button" id="edit-lesson">Редактировать</button><button type="button" class="danger-button" id="delete-lesson">Удалить</button></div>' : ''}</div><div class="lesson-meta"><time class="muted" datetime="${escape(lesson.scheduledAt)}+03:00">${escape(lessonDate(lesson.scheduledAt))} МСК</time>${trackingMarkup(lesson, teacher, true)}${lesson.recurringScheduleId ? '<span class="lesson-series-label">По недельному расписанию</span>' : ''}</div><p class="status" role="status" data-tracking-message></p>${description(lesson.description)}${filesMarkup(files, 'LESSON', lesson.id, teacher)}${receiptsMarkup(receipts, teacher)}<div class="materials-heading homework-heading"><h3>Домашние задания</h3>${teacher ? '<button class="secondary-button" type="button" id="add-task">Добавить домашку</button>' : ''}</div>${tasks.length ? '' : '<p class="muted">Домашних заданий пока нет</p>'}<div id="homework-list">${taskDetails.map(({ task, taskFiles, solution, solutionFiles }) => {
         const editable = profile.role === 'STUDENT' && (solution === null || solution.grade === null)
         const status = !solution ? 'Не отправлено' : solution.grade === null ? 'Ожидает проверки' : solution.grade ? 'Зачёт' : 'Незачёт'
         return `<article class="homework-card" data-task="${task.id}"><div class="materials-heading"><h3>${escape(task.title)}</h3>${teacher ? '<div class="material-actions"><button class="secondary-button" type="button" data-edit-task>Редактировать</button><button class="danger-button" type="button" data-delete-task>Удалить</button></div>' : ''}</div>${description(task.description)}${filesMarkup(taskFiles, 'TASK', task.id, teacher)}<section class="solution-section"><div class="materials-heading"><h4>Решение</h4><span class="grade-badge ${solution?.grade === true ? 'passed' : solution?.grade === false ? 'failed' : ''}">${status}</span></div>${description(solution?.description ?? null)}${solution ? filesMarkup(solutionFiles, 'SOLUTION', solution.id, editable) : ''}${solution?.teacherComment ? `<div class="teacher-comment"><h4>Комментарий преподавателя</h4>${description(solution.teacherComment)}</div>` : ''}${solution?.gradedAt ? `<p class="muted">Проверено: ${escape(date(solution.gradedAt))}</p>` : ''}${editable ? `<button class="primary-button" type="button" data-solution>${solution ? 'Редактировать решение' : 'Отправить решение'}</button>${!solution ? '<p class="muted">Можно отправить ответ текстом или сохранить решение и прикрепить файлы.</p>' : ''}` : profile.role === 'STUDENT' ? '<p class="muted">Решение оценено. Редактирование закрыто.</p>' : ''}${teacher && solution ? '<button class="primary-button" type="button" data-grade>Оценить решение</button>' : ''}</section><p class="status" role="status" data-task-message></p></article>`
@@ -191,5 +191,6 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
       void loadDetail()
     }
   }, 30_000)
+  if (teacher) mountLessonScheduling(root.querySelector<HTMLElement>('[data-course-scheduling]')!, courseId, { onCreateOneOff: () => lessonEditor(), onChanged: loadLessons })
   void loadLessons()
 }

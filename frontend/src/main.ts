@@ -5,6 +5,7 @@ import { getTeacherSite, renderTeacherContacts, teacherSites, type TeacherSite }
 import { renderOlgaHome } from './olga-home.ts'
 import { mountCourseLearning } from './course-learning.ts'
 import { mountTeacherSchedule } from './teacher-schedule.ts'
+import { mountLessonScheduling } from './recurring-lessons.ts'
 import { getCourse, getCourses, getProfile, getTeachers, login, logout, register, updateProfile, type CourseSummary, type Profile, type TeacherSummary, type UserRole } from './auth-api.ts'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -280,10 +281,11 @@ function teacherCourseContact(course: CourseSummary): string {
 function renderStudents(profile: Profile, courses: CourseSummary[]): void {
   document.title = 'Ученики — Repitma'
   const rows = courses.length
-    ? courses.map((course) => `<a class="student-row" href="/courses/${course.id}"><span><strong>${escapeHtml(course.username)}</strong>${course.name ? `<small>${escapeHtml(course.name)}</small>` : ''}</span><span>${displayValue(course.city)}</span><span>${courseContact(course)}</span><span class="row-arrow">→</span></a>`).join('')
+    ? courses.map((course) => `<article class="student-card"><a class="student-row" href="/courses/${course.id}"><span><strong>${escapeHtml(course.username)}</strong>${course.name ? `<small>${escapeHtml(course.name)}</small>` : ''}</span><span>${displayValue(course.city)}</span><span>${courseContact(course)}</span><span class="row-arrow">→</span></a><div class="student-scheduling" id="student-scheduling-${course.id}"></div></article>`).join('')
     : '<div class="empty-list"><h2>Учеников пока нет</h2><p>Зарегистрируйте ученика — курс текущего учебного года создастся автоматически.</p><a class="primary-button" href="/register">Зарегистрировать ученика</a></div>'
   app.innerHTML = `${header(profile)}<main><section class="students-page"><p class="eyebrow">Текущий учебный год</p><h1>Ученики</h1><div class="student-list">${rows}</div></section></main>${footer()}`
   bindHeader()
+  courses.forEach(course => mountLessonScheduling(document.querySelector<HTMLElement>(`#student-scheduling-${course.id}`)!, course.id))
 }
 
 function renderCourse(profile: Profile, course: CourseSummary): void {

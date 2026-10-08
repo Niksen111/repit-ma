@@ -13,6 +13,7 @@ interface LessonMapper {
     fun delete(@Param("lessonId") lessonId: Long): Int
     fun findById(@Param("lessonId") lessonId: Long): Lesson?
     fun findByCourse(@Param("courseId") courseId: Long): List<Lesson>
+    fun findAt(@Param("courseId") courseId: Long, @Param("scheduledAt") scheduledAt: String): Lesson?
 
     fun attachFile(
         @Param("lessonId") lessonId: Long,

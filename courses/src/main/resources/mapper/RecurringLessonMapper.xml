@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="ru.niksen111.repitma.courses.mapper.RecurringLessonMapper">
+    <resultMap id="schedule" type="ru.niksen111.repitma.courses.entity.RecurringLessonSchedule">
+        <id property="id" column="id"/>
+        <result property="courseId" column="course_id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="active" column="active"/>
+    </resultMap>
+
+    <resultMap id="slot" type="ru.niksen111.repitma.courses.entity.RecurringLessonSlot">
+        <id property="id" column="id"/>
+        <result property="scheduleId" column="schedule_id"/>
+        <result property="dayOfWeek" column="day_of_week"/>
+        <result property="startTime" column="start_time"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO recurring_lesson_schedules (course_id, title, description, start_date, end_date, active)
+        VALUES (#{courseId}, #{title}, #{description}, #{startDate}, #{endDate}, #{active})
+    </insert>
+
+    <update id="update">
+        UPDATE recurring_lesson_schedules
+        SET title = #{title}, description = #{description}, start_date = #{startDate}, end_date = #{endDate}
+        WHERE id = #{id}
+    </update>
+
+    <insert id="insertSlot" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO recurring_lesson_slots (schedule_id, day_of_week, start_time)
+        VALUES (#{scheduleId}, #{dayOfWeek}, #{startTime})
+    </insert>
+
+    <select id="findById" resultMap="schedule">
+        SELECT id, course_id, title, description, start_date, end_date, active
+        FROM recurring_lesson_schedules WHERE id = #{scheduleId}
+    </select>
+
+    <select id="findByCourse" resultMap="schedule">
+        SELECT id, course_id, title, description, start_date, end_date, active
+        FROM recurring_lesson_schedules WHERE course_id = #{courseId} ORDER BY active DESC, id DESC
+    </select>
+
+    <select id="findActiveIds" resultType="long">
+        SELECT id FROM recurring_lesson_schedules WHERE active = 1 ORDER BY id
+    </select>
+
+    <select id="findSlots" resultMap="slot">
+        SELECT id, schedule_id, day_of_week, start_time
+        FROM recurring_lesson_slots WHERE schedule_id = #{scheduleId} AND active = 1 ORDER BY day_of_week, start_time
+    </select>
+
+    <select id="findAllSlots" resultMap="slot">
+        SELECT id, schedule_id, day_of_week, start_time
+        FROM recurring_lesson_slots WHERE schedule_id = #{scheduleId} ORDER BY day_of_week, start_time
+    </select>
+
+    <update id="deactivateSlots">
+        UPDATE recurring_lesson_slots SET active = 0 WHERE schedule_id = #{scheduleId}
+    </update>
+
+    <update id="activateSlot">
+        UPDATE recurring_lesson_slots SET active = 1 WHERE id = #{slotId}
+    </update>
+
+    <update id="setActive">
+        UPDATE recurring_lesson_schedules SET active = #{active} WHERE id = #{scheduleId}
+    </update>
+
+    <insert id="reserveOccurrence">
+        INSERT INTO recurring_lesson_occurrences (slot_id, scheduled_at)
+        VALUES (#{slotId}, #{scheduledAt}) ON CONFLICT (slot_id, scheduled_at) DO NOTHING
+    </insert>
+
+    <update id="linkOccurrence">
+        UPDATE recurring_lesson_occurrences SET lesson_id = #{lessonId}
+        WHERE slot_id = #{slotId} AND scheduled_at = #{scheduledAt}
+    </update>
+
+    <update id="cancelUpcoming">
+        UPDATE lessons SET outcome = 'CANCELLED'
+        WHERE recurring_schedule_id = #{scheduleId} AND scheduled_at &gt; #{now} AND outcome = 'AUTO'
+    </update>
+</mapper>

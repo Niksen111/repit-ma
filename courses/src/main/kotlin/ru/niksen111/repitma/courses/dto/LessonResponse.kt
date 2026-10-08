@@ -12,6 +12,7 @@ data class LessonResponse(
     val scheduledAt: String,
     val status: LessonStatus,
     val paid: Boolean,
+    val recurringScheduleId: Long?,
 )
 
 fun Lesson.toResponse(now: LocalDateTime) = LessonResponse(
@@ -27,4 +28,5 @@ fun Lesson.toResponse(now: LocalDateTime) = LessonResponse(
         ) LessonStatus.SCHEDULED else LessonStatus.PAST
     },
     paid = paid,
+    recurringScheduleId = recurringScheduleId,
 )

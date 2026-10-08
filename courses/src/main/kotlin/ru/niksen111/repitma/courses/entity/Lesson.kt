@@ -8,4 +8,5 @@ data class Lesson(
     val scheduledAt: String,
     val outcome: LessonOutcome = LessonOutcome.AUTO,
     val paid: Boolean = false,
+    val recurringScheduleId: Long? = null,
 )
