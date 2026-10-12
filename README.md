@@ -12,6 +12,25 @@
 - Gradle Wrapper;
 - Docker и Docker Compose.
 
+## Структура проекта
+
+- `frontend/` — TypeScript, Vite, стили и публичные страницы преподавателей.
+  Главная Марии находится в `src/main.ts`, Ольги — в `src/olga-home.ts`,
+  Егора — в `src/egor-home.ts`; контакты и выбор страницы — в `src/teacher-site.ts`.
+- `app/` — запускаемое Spring Boot приложение: публичный API выбора сайта по Host,
+  маршруты SPA, регистрация, обработка ошибок и миграции Liquibase.
+- `auth/` — Spring Security и авторизация; `users/` — аккаунты и профили;
+  `courses/` — курсы, занятия, материалы, расписания и чеки.
+- `deploy/` — серверные примеры Compose и Caddy, инструкции выпуска и настройки
+  поддоменов в [deploy/README.md](deploy/README.md).
+- `scripts/deploy.sh` и `.github/workflows/release.yaml` — резервная копия,
+  публикация Docker-образа по релизному тегу и деплой.
+
+Один backend обслуживает `repit-ma.ru` (Мария), `okoroleva.repit-ma.ru` (Ольга)
+и `mathegor.repit-ma.ru` (Егор). Контент выбирается через `GET /api/public/site`,
+а доступ к курсам определяется аккаунтом. Публичная страница не создаёт аккаунт
+преподавателя в базе автоматически.
+
 ## Локальный запуск
 
 Потребуются JDK 21, Node.js 22 и pnpm 11.

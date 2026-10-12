@@ -1,4 +1,4 @@
-export type TeacherKey = 'maria' | 'olga'
+export type TeacherKey = 'maria' | 'olga' | 'egor'
 
 interface Contact {
   label: string
@@ -30,6 +30,14 @@ export const teacherSites: Record<TeacherKey, TeacherSite> = {
       { label: 'Телефон', value: '+7 911 115 09 16', href: 'tel:+79111150916' },
     ],
   },
+  egor: {
+    key: 'egor', name: 'Егор', toName: 'Егору', withName: 'Егором',
+    contacts: [
+      { label: 'MAX', value: 'Написать в MAX', href: 'https://max.ru/u/f9LHodD0cOJqb9xoKQuDAAKtPxXFNQiV25ndmaYntNCFzSnbWBuXiqmZioo' },
+      { label: 'Telegram', value: '@eztguser', href: 'https://t.me/eztguser' },
+      { label: 'Почта', value: 'zagidulinegor@yandex.ru', href: 'mailto:zagidulinegor@yandex.ru' },
+    ],
+  },
 }
 
 export async function getTeacherSite(hostname: string): Promise<TeacherSite> {
@@ -37,16 +45,18 @@ export async function getTeacherSite(hostname: string): Promise<TeacherSite> {
     const response = await fetch('/api/public/site', { cache: 'no-store' })
     if (!response.ok) throw new Error('Не удалось загрузить страницу преподавателя')
     const data = await response.json() as { teacher?: string }
-    if (data.teacher !== 'maria' && data.teacher !== 'olga') throw new Error('Неизвестный преподаватель')
+    if (data.teacher !== 'maria' && data.teacher !== 'olga' && data.teacher !== 'egor') throw new Error('Неизвестный преподаватель')
     return teacherSites[data.teacher]
   } catch (error) {
     // Vite-only development works without starting the Java backend.
     if (hostname === 'okoroleva.localhost') return teacherSites.olga
+    if (hostname === 'mathegor.localhost') return teacherSites.egor
     if (['localhost', '127.0.0.1', '[::1]'].includes(hostname)) return teacherSites.maria
     throw error
   }
 }
 
 export function renderTeacherContacts(site: TeacherSite, escape: (text: string) => string): string {
+  if (!site.contacts.length) return '<p class="teacher-contact-notice">Контакты для записи на занятия появятся здесь.</p>'
   return `<div class="teacher-contacts" aria-label="Контакты: ${escape(site.name)}">${site.contacts.map(contact => `<a href="${escape(contact.href)}"${contact.href.startsWith('https:') ? ' target="_blank" rel="noopener noreferrer"' : ''}><span>${escape(contact.label)}</span><strong>${escape(contact.value)}</strong></a>`).join('')}</div>`
 }

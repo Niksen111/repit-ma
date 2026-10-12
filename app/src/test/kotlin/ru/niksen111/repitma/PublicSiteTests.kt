@@ -20,6 +20,10 @@ class PublicSiteTests(@Autowired private val mockMvc: MockMvc) {
             "http://okoroleva.localhost:5173" to "olga",
             "https://OKOROLEVA.REPIT-MA.RU" to "olga",
             "https://okoroleva.repit-ma.ru." to "olga",
+            "https://mathegor.repit-ma.ru" to "egor",
+            "http://mathegor.localhost:5173" to "egor",
+            "https://MATHEGOR.REPIT-MA.RU" to "egor",
+            "https://mathegor.repit-ma.ru." to "egor",
         )
         sites.forEach { (origin, teacher) ->
             mockMvc.get("$origin/api/public/site").andExpect {
@@ -33,8 +37,8 @@ class PublicSiteTests(@Autowired private val mockMvc: MockMvc) {
     @Test
     fun `query and forwarded header cannot select another teacher`() {
         mockMvc.get("https://repit-ma.ru/api/public/site") {
-            param("teacher", "olga")
-            header("X-Forwarded-Host", "okoroleva.repit-ma.ru")
+            param("teacher", "egor")
+            header("X-Forwarded-Host", "mathegor.repit-ma.ru")
         }.andExpect {
             status { isOk() }
             jsonPath("$.teacher") { value("maria") }

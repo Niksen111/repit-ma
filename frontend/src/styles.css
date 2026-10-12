@@ -38,6 +38,17 @@ h1 { max-width: 850px; margin: 0; font: 700 clamp(44px, 7vw, 86px)/1.03 Unbounde
 .teacher-photo-frame { width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 24px; box-shadow: 0 24px 60px #23382e24; }
 .teacher-photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .teacher-photo figcaption { margin-top: 14px; font-size: 13px; line-height: 1.5; opacity: .65; }
+.egor-hero { grid-template-columns: minmax(0, 1fr) minmax(280px, .7fr); }
+.egor-booking { display: inline-block; margin-top: 30px; }
+.egor-photo { max-width: 380px; }
+.egor-photo .teacher-photo-frame { aspect-ratio: 3 / 4; }
+.egor-photo img { transform: scale(1.65); transform-origin: 48% 68%; }
+.egor-page .result-card p, .teacher-contact-notice { font-size: 15px; line-height: 1.75; }
+.egor-page .result-card h3 { margin: 0 0 16px; font-size: 22px; }
+.egor-page .result-card p { margin: 0; }
+.egor-page .olympiad-card ul { margin-top: 20px; }
+.teacher-contact-notice { color: #66706a; }
+@media (max-width: 760px) { .egor-page .egor-hero { grid-template-columns: 1fr; } }
 .olga-question { font-weight: 700; }
 .olga-hero-copy { max-width: 600px; font-size: 17px; line-height: 1.75; color: #66706a; }
 .olga-photo .teacher-photo-frame { aspect-ratio: 3 / 4; }
@@ -106,7 +117,7 @@ h1 { max-width: 850px; margin: 0; font: 700 clamp(44px, 7vw, 86px)/1.03 Unbounde
 .reviews-heading h2 { margin: 0; font: 700 clamp(27px, 4.2vw, 50px)/1.18 Unbounded, Arial, sans-serif; letter-spacing: -.045em; }
 .reviews-heading a { flex-shrink: 0; }
 .reviews-intro { max-width: 620px; margin: 24px 0 32px; font-size: 15px; line-height: 1.7; color: #66706a; }
-.reviews-track { position: relative; display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: #2d604e55 transparent; padding-bottom: 16px; }
+.reviews-track { position: relative; display: flex; align-items: flex-start; gap: 20px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: #2d604e55 transparent; padding-bottom: 16px; }
 .review-card { flex: 0 0 calc((100% - 20px) / 2); min-width: 0; display: flex; flex-direction: column; padding: clamp(20px, 3vw, 32px); border: 1px solid #2d604e22; border-radius: 22px; background: #edf1e9; scroll-snap-align: start; }
 .review-card:nth-child(3n + 2) { background: #f5d7ae66; }
 .review-author { display: flex; align-items: center; gap: 12px; }
@@ -116,8 +127,13 @@ h1 { max-width: 850px; margin: 0; font: 700 clamp(44px, 7vw, 86px)/1.03 Unbounde
 .review-rating { flex-shrink: 0; margin-left: auto; font-size: 13px; font-weight: 700; color: var(--accent); }
 .review-rating span { color: #b67424; }
 .review-card blockquote { margin: 24px 0 28px; font-size: 15px; line-height: 1.8; overflow-wrap: anywhere; }
+.review-text.is-collapsed { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 7; overflow: hidden; }
+.review-toggle { align-self: flex-start; min-height: 44px; margin: -12px 0 16px; padding: 8px 0; border: 0; background: transparent; color: var(--accent); font: 700 14px Manrope, Arial, sans-serif; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.review-toggle[hidden] { display: none; }
+.review-toggle:hover { text-decoration: none; }
 .review-source { display: grid; gap: 10px; margin-top: auto; padding-top: 18px; border-top: 1px solid #38453e22; font-size: 12px; line-height: 1.6; color: #66706a; }
-.reviews-navigation { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; }
+.egor-page .review-card blockquote { white-space: pre-line; }
+.reviews-navigation { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .reviews-count { font-size: 13px; color: #66706a; }
 .reviews-arrows { display: flex; gap: 10px; }
 .reviews-arrows button { width: 48px; height: 48px; border: 1px solid #2d604e44; border-radius: 50%; background: transparent; color: var(--accent); font: 400 24px Manrope, Arial, sans-serif; cursor: pointer; }

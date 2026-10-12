@@ -19,6 +19,7 @@ class PublicSiteController {
         val teacher = when (request.serverName.lowercase(Locale.ROOT).trimEnd('.')) {
             "repit-ma.ru", "www.repit-ma.ru", "localhost", "127.0.0.1", "::1" -> "maria"
             "okoroleva.repit-ma.ru", "okoroleva.localhost" -> "olga"
+            "mathegor.repit-ma.ru", "mathegor.localhost" -> "egor"
             else -> throw ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown teacher site")
         }
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(PublicSite(teacher))

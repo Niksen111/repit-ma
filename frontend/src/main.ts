@@ -3,6 +3,7 @@ import { mariaReviews, reviewLoginDestination } from './maria-reviews.ts'
 import { mountReviews, renderReviews } from './reviews.ts'
 import { getTeacherSite, renderTeacherContacts, teacherSites, type TeacherSite } from './teacher-site.ts'
 import { renderOlgaHome } from './olga-home.ts'
+import { renderEgorHome } from './egor-home.ts'
 import { mountCourseLearning } from './course-learning.ts'
 import { mountTeacherSchedule } from './teacher-schedule.ts'
 import { mountLessonScheduling } from './recurring-lessons.ts'
@@ -56,6 +57,13 @@ function bindHeader(): void {
 }
 
 function renderHome(profile: Profile | null): void {
+  if (currentSite.key === 'egor') {
+    document.title = 'Егор — преподаватель математики, ЕГЭ, ОГЭ и олимпиады'
+    app.innerHTML = `${header(profile)}${renderEgorHome(escapeHtml)}${footer()}`
+    bindHeader()
+    mountReviews(app)
+    return
+  }
   if (currentSite.key === 'olga') {
     document.title = 'Ольга Королева — репетитор по математике'
     app.innerHTML = `${header(profile)}${renderOlgaHome(escapeHtml)}${footer()}`
@@ -181,7 +189,7 @@ function renderLogin(): void {
 
 function renderReviewContact(profile: Profile): void {
   document.title = `Оставить отзыв — ${currentSite.name}`
-  app.innerHTML = `${header(profile)}<main><section class="account review-contact-page"><a class="back-link" href="/#reviews-title">← К отзывам</a><p class="eyebrow">Обратная связь о занятиях</p><h1>Поделитесь впечатлениями</h1><div class="review-contact-card"><h2>Напишите ${escapeHtml(currentSite.toName)}</h2><p>Вы можете отправить отзыв ${escapeHtml(currentSite.toName)}, связавшись по одному из контактов ниже. Ваш отзыв будет позже добавлен на сайт.</p>${renderTeacherContacts(currentSite, escapeHtml)}</div></section></main>${footer()}`
+  app.innerHTML = `${header(profile)}<main><section class="account review-contact-page"><a class="back-link" href="/#reviews-title">← К отзывам</a><p class="eyebrow">Обратная связь о занятиях</p><h1>Поделитесь впечатлениями</h1><div class="review-contact-card"><h2>Напишите ${escapeHtml(currentSite.toName)}</h2>${currentSite.contacts.length ? `<p>Вы можете отправить отзыв ${escapeHtml(currentSite.toName)}, связавшись по одному из контактов ниже. Ваш отзыв будет позже добавлен на сайт.</p>` : ''}${renderTeacherContacts(currentSite, escapeHtml)}</div></section></main>${footer()}`
   bindHeader()
 }
 
