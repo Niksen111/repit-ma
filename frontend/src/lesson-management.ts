@@ -29,7 +29,7 @@ export function receiptsMarkup(receipts: Attachment[], teacher: boolean): string
   return `<section class="receipt-section"><div class="receipt-heading"><h4>Чеки оплаты${receipts.length ? ` <span class="receipt-count">${receipts.length}</span>` : ''}</h4>${teacher ? '<label class="receipt-upload" title="До 25 МиБ. Чек будет доступен ученику."><span>+ Прикрепить чек</span><input class="visually-hidden" type="file" data-receipt-upload aria-label="Прикрепить чек"></label>' : ''}</div>${receipts.length ? `<ul class="receipt-list">${receipts.map(file => `<li><button type="button" class="file-download" data-receipt-download="${file.id}">${escape(file.originalName)}</button>${teacher ? `<button type="button" class="file-remove" data-receipt-remove="${file.id}" aria-label="Удалить чек ${escape(file.originalName)}">Удалить</button>` : ''}</li>`).join('')}</ul>` : '<p class="muted receipt-empty">Чек пока не прикреплён</p>'}<p class="status" role="status" data-receipt-message></p></section>`
 }
 
-export function bindLessonManagement(root: HTMLElement, api: CourseApi, lesson: Lesson, receipts: Attachment[], refresh: () => Promise<void>): void {
+export function bindLessonManagement(root: HTMLElement, api: CourseApi, lesson: Lesson, receipts: Attachment[], refresh: (updated?: Lesson) => Promise<void>): void {
   const message = root.querySelector<HTMLElement>('[data-tracking-message]')!
   let busy = false
   async function act(action: () => Promise<void>, target = message): Promise<void> {
@@ -56,11 +56,11 @@ export function bindLessonManagement(root: HTMLElement, api: CourseApi, lesson: 
   }
   root.querySelector<HTMLSelectElement>('[data-outcome]')?.addEventListener('change', event => {
     const outcome = (event.currentTarget as HTMLSelectElement).value
-    void act(async () => { await api.request(`/lessons/${lesson.id}/tracking`, 'PUT', { outcome }); await refresh() })
+    void act(async () => { const updated = await api.request<Lesson>(`/lessons/${lesson.id}/tracking`, 'PUT', { outcome }); await refresh(updated) })
   })
   root.querySelector<HTMLInputElement>('[data-paid]')?.addEventListener('change', event => {
     const paid = (event.currentTarget as HTMLInputElement).checked
-    void act(async () => { await api.request(`/lessons/${lesson.id}/tracking`, 'PUT', { paid }); await refresh() })
+    void act(async () => { const updated = await api.request<Lesson>(`/lessons/${lesson.id}/tracking`, 'PUT', { paid }); await refresh(updated) })
   })
   root.querySelectorAll<HTMLButtonElement>('[data-receipt-download]').forEach(button => button.addEventListener('click', () => {
     const file = receipts.find(item => item.id === Number(button.dataset.receiptDownload))!

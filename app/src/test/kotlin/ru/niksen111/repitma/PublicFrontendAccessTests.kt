@@ -36,6 +36,14 @@ class PublicFrontendAccessTests(@Autowired private val mockMvc: MockMvc) {
     }
 
     @Test
+    fun `calendar page loads the frontend without server authentication`() {
+        mockMvc.get("/calendar").andExpect {
+            status { isOk() }
+            forwardedUrl("/index.html")
+        }
+    }
+
+    @Test
     fun `profile api still requires authentication`() {
         mockMvc.get("/api/profile").andExpect {
             status { isUnauthorized() }

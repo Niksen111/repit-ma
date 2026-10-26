@@ -6,6 +6,7 @@ import { renderOlgaHome } from './olga-home.ts'
 import { renderEgorHome } from './egor-home.ts'
 import { mountCourseLearning } from './course-learning.ts'
 import { mountTeacherSchedule } from './teacher-schedule.ts'
+import { mountTeacherCalendar } from './teacher-calendar.ts'
 import { mountTeacherNote } from './teacher-note.ts'
 import { mountLessonScheduling } from './recurring-lessons.ts'
 import { getCourse, getCourses, getProfile, getTeachers, login, logout, register, updateProfile, type CourseSummary, type Profile, type TeacherSummary, type UserRole } from './auth-api.ts'
@@ -23,7 +24,7 @@ function header(profile: Profile | null): string {
   const registrationLink = canRegister ? '<a href="/register">Регистрация</a>' : ''
   const studentsLink = profile?.role === 'TEACHER' || profile?.role === 'ADMIN' ? '<a href="/students">Ученики</a>' : ''
   const learningLink = profile?.role === 'STUDENT' ? '<a href="/learning">Обучение</a>' : ''
-  const scheduleLink = profile?.role === 'TEACHER' || profile?.role === 'ADMIN' ? '<a href="/schedule">Расписание</a>' : ''
+  const scheduleLink = profile?.role === 'TEACHER' || profile?.role === 'ADMIN' ? '<a href="/calendar">Календарь</a><a href="/schedule">Расписание</a>' : ''
   const links = profile
     ? `<a href="/">Главная</a>${studentsLink}${learningLink}${scheduleLink}${registrationLink}<a href="/account">Аккаунт</a><button id="logout" type="button">Выйти</button>`
     : '<a href="/">Главная</a><a class="login-link" href="/login">Войти</a>'
@@ -399,15 +400,18 @@ async function start(): Promise<void> {
     renderStudents(profile, courses)
     return
   }
-  if (path === '/schedule') {
+  if (path === '/calendar' || path === '/schedule') {
     if (!profile || (profile.role !== 'TEACHER' && profile.role !== 'ADMIN')) {
       window.location.href = profile ? '/account' : '/login'
       return
     }
-    document.title = 'Расписание — Repitma'
-    app.innerHTML = `${header(profile)}<main><section class="students-page schedule-page"><p class="eyebrow">Занятия и оплата</p><h1>Расписание</h1><div id="teacher-schedule"></div></section></main>${footer()}`
+    const calendar = path === '/calendar'
+    document.title = `${calendar ? 'Календарь' : 'Расписание'} — Repitma`
+    app.innerHTML = `${header(profile)}<main><section class="students-page schedule-page ${calendar ? 'calendar-page' : ''}"><p class="eyebrow">Занятия и оплата</p><h1>${calendar ? 'Календарь' : 'Расписание'}</h1><div id="teacher-schedule"></div></section></main>${footer()}`
     bindHeader()
-    mountTeacherSchedule(document.querySelector<HTMLElement>('#teacher-schedule')!)
+    const root = document.querySelector<HTMLElement>('#teacher-schedule')!
+    if (calendar) mountTeacherCalendar(root)
+    else mountTeacherSchedule(root)
     return
   }
   if (path === '/learning') {
