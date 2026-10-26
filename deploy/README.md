@@ -94,6 +94,105 @@ Docker Compose v2, bash, flock, tar, curl и стандартные утилит
 workflow завершается ошибкой; автоматического отката базы нет.
 Резервные копии не удаляются автоматически: контролировать свободное место.
 
+## Еженедельная резервная копия в VK Cloud S3
+
+На сервере `135.106.174.207` установлены `repit-ma-backup.timer` и
+`repit-ma-backup.service`: каждое воскресенье в **04:00 Europe/Moscow**.
+Хранилище — приватные объекты в бакете `repit-ma-backups-niksen`,
+префикс `repit-ma/weekly/`, регион `ru-msk`.
+**Проверено 26.10.2026:** сохранённый архив и свежий снимок успешно загружены в S3,
+полностью скачаны обратно и сверены по SHA-256. Яндекс WebDAV больше не используется.
+`Persistent=true` запускает пропущенное задание после включения сервера.
+Это серверное задание systemd, оно не зависит от открытого чата или компьютера.
+
+Скрипт [scripts/backup.py](../scripts/backup.py) использует SQLite Online Backup
+через Python 3.12+ без остановки приложения. Для S3 нужен пакет `python3-boto3`.
+Блокировка `.deploy.lock` общая
+со скриптом деплоя: обновление приложения и снимок базы не выполняются одновременно.
+Все текущие материалы и чеки хранятся в SQLite. Если появятся внешние файлы,
+их нужно отдельно добавить в скрипт: еженедельный архив включает только базу
+и `manifest.json` с версией приложения и SHA-256 базы.
+
+Перед загрузкой скрипт проверяет `integrity_check`, `foreign_key_check` и базу,
+извлечённую из архива. После загрузки полностью скачивает архив и сравнивает SHA-256.
+Локальные архивы находятся в `/opt/repit-ma/backups/weekly/`, удалённые —
+в `s3://repit-ma-backups-niksen/repit-ma/weekly/`. Файл `.uploaded` рядом с локальным
+архивом содержит SHA-256 и адрес назначения и означает, что загрузка проверена.
+При смене бакета или префикса старые архивы загружаются в новое место.
+Непроверенные загрузки повторяются при следующем
+запуске. При ошибке systemd повторяет задание через 15 минут, до четырёх запусков
+за 12 часов. Ошибки видны в журнале; отдельные уведомления не настроены.
+Автоматического удаления копий нет ни локально, ни в S3. Загрузка каждого объекта
+использует ACL `private`, Content-MD5 и метаданные SHA-256; доступ — HTTPS/SigV4.
+Размер одного архива ограничен лимитом S3 PutObject (5 ГБ); текущие архивы около 15 МиБ.
+
+S3-ключи для задания хранятся в `/etc/repit-ma/backup.json` с правами `600`,
+каталог — `700`; ключи не передаются аргументами процесса и не включаются в архив.
+Формат настройки:
+
+```json
+{
+  "access_key_id": "YOUR_ACCESS_KEY_ID",
+  "secret_access_key": "YOUR_SECRET_ACCESS_KEY",
+  "bucket": "repit-ma-backups-niksen",
+  "endpoint_url": "https://hb.ru-msk.vkcloud-storage.ru",
+  "region": "ru-msk",
+  "project_dir": "/opt/repit-ma",
+  "prefix": "repit-ma/weekly"
+}
+```
+
+Для повторной установки сохранить скрипт в `/opt/repit-ma/scripts/backup.py`,
+а [service](repit-ma-backup.service) и [timer](repit-ma-backup.timer) —
+в `/etc/systemd/system/`. После создания защищённого файла настройки:
+
+```bash
+apt-get update
+apt-get install -y python3-boto3
+systemd-analyze verify /etc/systemd/system/repit-ma-backup.{service,timer}
+systemctl daemon-reload
+systemctl enable --now repit-ma-backup.timer
+systemctl start repit-ma-backup.service
+```
+
+Тесты на Linux с Python 3.12+ и boto3:
+
+```bash
+python3 -m unittest discover -s scripts -v
+```
+
+Они проверяют восстановление строк SQLite из архива, отказ при повреждённом
+скачивании, повтор загрузки и перенос копий при смене хранилища. Тесты используют
+временную базу и S3 в памяти, производственные ключи и данные не читают.
+
+Проверка и ручной запуск:
+
+```bash
+systemctl list-timers repit-ma-backup.timer --all
+systemctl status repit-ma-backup.service
+journalctl -u repit-ma-backup.service -n 50 --no-pager
+systemctl start repit-ma-backup.service
+```
+
+### Восстановление базы
+
+Выбрать архив из S3 либо из `backups/weekly`, распаковать в отдельный каталог.
+Сверить SHA-256 `data/repit-ma.db` с `database_sha256` в `manifest.json`, выполнить
+`PRAGMA integrity_check` и `PRAGMA foreign_key_check` через Python/SQLite.
+В `manifest.json` также записана версия приложения: учитывать совместимость
+этой версии с миграциями восстанавливаемой базы.
+
+Восстановление выполнять в согласованное время простоя. Сначала остановить timer,
+дождаться завершения активного backup service и получить эксклюзивную блокировку
+`/opt/repit-ma/.deploy.lock` через `flock`. Остановить `app` командой
+`docker compose stop app` из `/opt/repit-ma`. Сохранить **весь** старый каталог
+`data` под отдельным именем, создать новый `data` с владельцем `10001:10001`
+и правами `750`, положить проверенную базу как `data/repit-ma.db` с владельцем
+`10001:10001` и правами `640`. Это исключает смешивание восстановленной базы
+со старыми файлами WAL/SHM. Запустить `docker compose start app`, проверить сайт,
+вход и данные. Освободить блокировку и включить timer обратно. Старый каталог
+сохранить до подтверждения успешного восстановления.
+
 ## Следующий релиз
 
 ### Календарь преподавателя

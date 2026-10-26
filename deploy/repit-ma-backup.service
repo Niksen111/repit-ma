@@ -1,0 +1,21 @@
+[Unit]
+Description=Verified Repit MA SQLite backup to VK Cloud S3
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=12h
+StartLimitBurst=4
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/repit-ma/scripts/backup.py /etc/repit-ma/backup.json
+TimeoutStartSec=1h
+Restart=on-failure
+RestartSec=15min
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/repit-ma
+
