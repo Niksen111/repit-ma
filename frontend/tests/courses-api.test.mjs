@@ -7,6 +7,26 @@ globalThis.sessionStorage = { getItem: () => 'Basic test' }
 afterEach(() => { globalThis.fetch = originalFetch })
 const api = new CourseApi(7)
 
+test('Preview bytes use authenticated attachment access for every owner and support cancellation', async () => {
+  const signal = new AbortController().signal
+  for (const owner of ['LESSON', 'TASK', 'SOLUTION', 'RECEIPT']) {
+    globalThis.fetch = async (url, options) => {
+      assert.equal(url, `/api/courses/7/files/10?ownerType=${owner}&ownerId=9`)
+      assert.equal(options.headers.Authorization, 'Basic test')
+      assert.equal(options.signal, signal)
+      return new Response('file bytes', { headers: { 'Content-Type': 'application/octet-stream' } })
+    }
+    assert.equal(await (await api.fileBlob(owner, 9, { id: 10 }, signal)).text(), 'file bytes')
+  }
+})
+
+test('Preview cannot turn denied, missing or expired file responses into content', async () => {
+  for (const status of [401, 403, 404, 500]) {
+    globalThis.fetch = async () => new Response('error', { status })
+    await assert.rejects(api.fileBlob('LESSON', 9, { id: 10 }), /Не удалось загрузить файл/)
+  }
+})
+
 test('An absent solution may be an empty 200 or JSON null', async () => {
   for (const body of ['', 'null']) {
     globalThis.fetch = async () => new Response(body)

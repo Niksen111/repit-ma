@@ -49,12 +49,16 @@ export class CourseApi {
     return this.request(this.filesPath(type, ownerId), 'POST', body)
   }
 
-  async download(type: OwnerType, ownerId: number, file: Attachment): Promise<void> {
+  async fileBlob(type: OwnerType, ownerId: number, file: Attachment, signal?: AbortSignal): Promise<Blob> {
     const authorization = getAuthorization()
     if (!authorization) throw new Error('Необходимо войти в аккаунт')
-    const response = await fetch(`/api/courses/${this.courseId}${this.filesPath(type, ownerId, file.id)}`, { headers: { Authorization: authorization } })
-    if (!response.ok) throw new Error('Не удалось скачать файл. Возможно, он удалён или сессия истекла.')
-    const url = URL.createObjectURL(await response.blob())
+    const response = await fetch(`/api/courses/${this.courseId}${this.filesPath(type, ownerId, file.id)}`, { headers: { Authorization: authorization }, signal })
+    if (!response.ok) throw new Error('Не удалось загрузить файл. Возможно, он удалён, недоступен или сессия истекла.')
+    return response.blob()
+  }
+
+  async download(type: OwnerType, ownerId: number, file: Attachment): Promise<void> {
+    const url = URL.createObjectURL(await this.fileBlob(type, ownerId, file))
     const link = document.createElement('a')
     link.href = url
     link.download = file.originalName

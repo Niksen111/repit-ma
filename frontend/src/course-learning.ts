@@ -1,3 +1,4 @@
+import { previewContentType, previewFile } from './file-preview.ts'
 import { type Profile } from './auth-api.ts'
 import { CourseApi, type Attachment, type Lesson, type OwnerType, type Solution, type Task } from './courses-api.ts'
 import { bindLessonManagement, lessonDate, lessonStatus, receiptsMarkup, statusBadge, trackingMarkup } from './lesson-management.ts'
@@ -125,7 +126,7 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
   }
 
   function filesMarkup(files: Attachment[], type: OwnerType, ownerId: number, editable: boolean): string {
-    return `<section class="attachment-section" data-owner="${type}" data-owner-id="${ownerId}"><h4>${type === 'LESSON' ? 'Материалы занятия' : type === 'TASK' ? 'Файлы задания' : 'Файлы решения'}</h4><ul class="attachment-list">${files.map(file => `<li><button class="file-download" type="button" data-download="${file.id}">${escape(file.originalName)}</button>${editable ? `<button class="file-remove" type="button" data-remove="${file.id}" aria-label="Удалить файл ${escape(file.originalName)}">Удалить</button>` : ''}</li>`).join('')}</ul>${files.length ? '' : '<p class="muted">Файлов пока нет</p>'}${editable ? '<label class="upload-label">Добавить файлы<input type="file" multiple><small>До 25 МиБ каждый. Изображения и документы.</small></label>' : ''}<p class="status" role="status"></p></section>`
+    return `<section class="attachment-section" data-owner="${type}" data-owner-id="${ownerId}"><h4>${type === 'LESSON' ? 'Материалы занятия' : type === 'TASK' ? 'Файлы задания' : 'Файлы решения'}</h4><ul class="attachment-list">${files.map(file => `<li><button class="file-download" type="button" data-download="${file.id}">${escape(file.originalName)}</button>${previewContentType(file) ? `<button class="file-preview-button" type="button" data-preview="${file.id}" aria-label="Предпросмотр ${escape(file.originalName)}">Предпросмотр</button>` : ''}${editable ? `<button class="file-remove" type="button" data-remove="${file.id}" aria-label="Удалить файл ${escape(file.originalName)}">Удалить</button>` : ''}</li>`).join('')}</ul>${files.length ? '' : '<p class="muted">Файлов пока нет</p>'}${editable ? '<label class="upload-label">Добавить файлы<input type="file" multiple><small>До 25 МиБ каждый. Изображения и документы.</small></label>' : ''}<p class="status" role="status"></p></section>`
   }
 
   async function loadDetail(): Promise<void> {
@@ -195,6 +196,10 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
         const status = section.querySelector<HTMLElement>('.status')!
         section.querySelectorAll<HTMLButtonElement>('[data-download]').forEach(button => button.addEventListener('click', () => {
           void act(button, () => api.download(type, ownerId, attachments.get(`${type}:${ownerId}`)!.find(file => file.id === Number(button.dataset.download))!), status)
+        }))
+        section.querySelectorAll<HTMLButtonElement>('[data-preview]').forEach(button => button.addEventListener('click', () => {
+          const file = attachments.get(`${type}:${ownerId}`)!.find(item => item.id === Number(button.dataset.preview))!
+          void act(button, () => previewFile(api, type, ownerId, file), status)
         }))
         section.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach(button => button.addEventListener('click', () => {
           if (!confirm('Удалить этот файл?')) return

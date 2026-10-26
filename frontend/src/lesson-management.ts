@@ -1,3 +1,4 @@
+import { previewContentType, previewFile } from './file-preview.ts'
 import { CourseApi, type Attachment, type Lesson, type LessonStatus } from './courses-api.ts'
 
 export const escape = (value: string | null): string => (value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
@@ -26,7 +27,7 @@ export function trackingMarkup(lesson: Lesson, teacher: boolean, compact = false
 }
 
 export function receiptsMarkup(receipts: Attachment[], teacher: boolean): string {
-  return `<section class="receipt-section"><div class="receipt-heading"><h4>Чеки оплаты${receipts.length ? ` <span class="receipt-count">${receipts.length}</span>` : ''}</h4>${teacher ? '<label class="receipt-upload" title="До 25 МиБ. Чек будет доступен ученику."><span>+ Прикрепить чек</span><input class="visually-hidden" type="file" data-receipt-upload aria-label="Прикрепить чек"></label>' : ''}</div>${receipts.length ? `<ul class="receipt-list">${receipts.map(file => `<li><button type="button" class="file-download" data-receipt-download="${file.id}">${escape(file.originalName)}</button>${teacher ? `<button type="button" class="file-remove" data-receipt-remove="${file.id}" aria-label="Удалить чек ${escape(file.originalName)}">Удалить</button>` : ''}</li>`).join('')}</ul>` : '<p class="muted receipt-empty">Чек пока не прикреплён</p>'}<p class="status" role="status" data-receipt-message></p></section>`
+  return `<section class="receipt-section"><div class="receipt-heading"><h4>Чеки оплаты${receipts.length ? ` <span class="receipt-count">${receipts.length}</span>` : ''}</h4>${teacher ? '<label class="receipt-upload" title="До 25 МиБ. Чек будет доступен ученику."><span>+ Прикрепить чек</span><input class="visually-hidden" type="file" data-receipt-upload aria-label="Прикрепить чек"></label>' : ''}</div>${receipts.length ? `<ul class="receipt-list">${receipts.map(file => `<li><button type="button" class="file-download" data-receipt-download="${file.id}">${escape(file.originalName)}</button>${previewContentType(file) ? `<button type="button" class="file-preview-button" data-receipt-preview="${file.id}" aria-label="Предпросмотр ${escape(file.originalName)}">Предпросмотр</button>` : ''}${teacher ? `<button type="button" class="file-remove" data-receipt-remove="${file.id}" aria-label="Удалить чек ${escape(file.originalName)}">Удалить</button>` : ''}</li>`).join('')}</ul>` : '<p class="muted receipt-empty">Чек пока не прикреплён</p>'}<p class="status" role="status" data-receipt-message></p></section>`
 }
 
 export function bindLessonManagement(root: HTMLElement, api: CourseApi, lesson: Lesson, receipts: Attachment[], refresh: (updated?: Lesson) => Promise<void>): void {
@@ -35,7 +36,7 @@ export function bindLessonManagement(root: HTMLElement, api: CourseApi, lesson: 
   async function act(action: () => Promise<void>, target = message): Promise<void> {
     if (busy) return
     busy = true
-    const controls = root.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>('[data-outcome], [data-paid], [data-receipt-upload], [data-receipt-remove], [data-receipt-download]')
+    const controls = root.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>('[data-outcome], [data-paid], [data-receipt-upload], [data-receipt-remove], [data-receipt-download], [data-receipt-preview]')
     controls.forEach(control => { control.disabled = true })
     target.className = 'status'
     target.textContent = 'Сохранение…'
@@ -65,6 +66,10 @@ export function bindLessonManagement(root: HTMLElement, api: CourseApi, lesson: 
   root.querySelectorAll<HTMLButtonElement>('[data-receipt-download]').forEach(button => button.addEventListener('click', () => {
     const file = receipts.find(item => item.id === Number(button.dataset.receiptDownload))!
     void act(() => api.download('RECEIPT', lesson.id, file), root.querySelector<HTMLElement>('[data-receipt-message]') ?? message)
+  }))
+  root.querySelectorAll<HTMLButtonElement>('[data-receipt-preview]').forEach(button => button.addEventListener('click', () => {
+    const file = receipts.find(item => item.id === Number(button.dataset.receiptPreview))!
+    void act(() => previewFile(api, 'RECEIPT', lesson.id, file), root.querySelector<HTMLElement>('[data-receipt-message]') ?? message)
   }))
   root.querySelectorAll<HTMLButtonElement>('[data-receipt-remove]').forEach(button => button.addEventListener('click', () => {
     if (!confirm('Удалить этот чек?')) return
