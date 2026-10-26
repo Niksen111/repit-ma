@@ -53,4 +53,11 @@
         <include refid="courseSelect"/>
         WHERE c.id = #{courseId}
     </select>
+    <select id="findTeacherNote" resultType="string">
+        SELECT teacher_note FROM courses WHERE id = #{courseId}
+    </select>
+
+    <update id="updateTeacherNote">
+        UPDATE courses SET teacher_note = #{note} WHERE id = #{courseId}
+    </update>
 </mapper>

@@ -77,5 +77,7 @@ private class FakeCourseMapper : CourseMapper {
     override fun findAll(): List<CourseResponse> = emptyList()
     override fun findForUser(userId: Long): List<CourseResponse> = emptyList()
     override fun findById(courseId: Long): CourseResponse? = null
+    override fun findTeacherNote(courseId: Long): String? = error("Not used in registration tests")
+    override fun updateTeacherNote(courseId: Long, note: String): Int = error("Not used in registration tests")
 }
 

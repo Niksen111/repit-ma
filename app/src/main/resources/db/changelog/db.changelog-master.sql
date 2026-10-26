@@ -203,3 +203,8 @@ CREATE TABLE recurring_lesson_occurrences (
 ALTER TABLE recurring_lesson_slots ADD COLUMN active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1));
 
 --rollback ALTER TABLE recurring_lesson_slots DROP COLUMN active;
+
+--changeset niksen111:010-course-teacher-note
+ALTER TABLE courses ADD COLUMN teacher_note TEXT NOT NULL DEFAULT '';
+
+--rollback ALTER TABLE courses DROP COLUMN teacher_note;

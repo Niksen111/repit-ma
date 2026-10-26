@@ -23,6 +23,11 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
   const message = root.querySelector<HTMLElement>('#learning-message')!
   const dialog = root.querySelector<HTMLDialogElement>('dialog')!
   const editor = dialog.querySelector<HTMLFormElement>('form')!
+  if (teacher) {
+    root.classList.add('teacher-course-materials')
+    root.querySelector('.materials-heading')!.before(detail)
+    picker.open = true
+  }
   let saveEditor: ((data: FormData) => Promise<void>) | null = null
 
   function report(error: unknown, target = message): void {
@@ -80,9 +85,7 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
     list.querySelectorAll<HTMLButtonElement>('[data-lesson]').forEach(button => button.addEventListener('click', () => {
       selected = Number(button.dataset.lesson)
       drawList()
-      picker.open = false
-      detail.focus({ preventScroll: true })
-      detail.scrollIntoView({ block: 'start' })
+      list.querySelector<HTMLButtonElement>(`[data-lesson="${selected}"]`)?.focus({ preventScroll: true })
       void loadDetail()
     }))
     list.querySelectorAll<HTMLButtonElement>('[data-page]').forEach(button => button.addEventListener('click', () => {

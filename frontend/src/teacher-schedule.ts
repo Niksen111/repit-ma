@@ -8,17 +8,18 @@ type ScheduleFilter = 'past' | 'upcoming' | 'all'
 export function schedulePage(entries: ScheduledLesson[], filter: ScheduleFilter, page: number, now = Date.now()) {
   const filtered = entries.filter(entry => filter === 'all' || (filter === 'past' ? lessonInstant(entry.lesson.scheduledAt) <= now : lessonInstant(entry.lesson.scheduledAt) > now))
   filtered.sort((a, b) => filter === 'upcoming' ? a.lesson.scheduledAt.localeCompare(b.lesson.scheduledAt) : b.lesson.scheduledAt.localeCompare(a.lesson.scheduledAt))
-  return { ...lessonPage(filtered, page), total: filtered.length }
+  return { ...lessonPage(filtered, page, 20), total: filtered.length }
 }
 
 export function mountTeacherSchedule(root: HTMLElement): void {
   let entries: ScheduledLesson[] = []
-  let filter: ScheduleFilter = 'past'
+  let filter: ScheduleFilter = 'upcoming'
   let page = 1
   root.innerHTML = '<p class="muted">Время занятий — московское (МСК). Изменения сохраняются сразу.</p><label class="schedule-filter">Показать<select><option value="past">Прошедшие занятия</option><option value="upcoming">Будущие занятия</option><option value="all">Все занятия</option></select></label><p class="status" role="status" id="schedule-message"></p><div id="schedule-table"></div><button class="secondary-button" type="button" id="refresh-schedule">Обновить расписание</button>'
   const table = root.querySelector<HTMLElement>('#schedule-table')!
   const message = root.querySelector<HTMLElement>('#schedule-message')!
   const refreshButton = root.querySelector<HTMLButtonElement>('#refresh-schedule')!
+  root.querySelector<HTMLSelectElement>('.schedule-filter select')!.value = filter
 
   function draw(): void {
     const visible = schedulePage(entries, filter, page)

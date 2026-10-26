@@ -6,6 +6,7 @@ import { renderOlgaHome } from './olga-home.ts'
 import { renderEgorHome } from './egor-home.ts'
 import { mountCourseLearning } from './course-learning.ts'
 import { mountTeacherSchedule } from './teacher-schedule.ts'
+import { mountTeacherNote } from './teacher-note.ts'
 import { mountLessonScheduling } from './recurring-lessons.ts'
 import { getCourse, getCourses, getProfile, getTeachers, login, logout, register, updateProfile, type CourseSummary, type Profile, type TeacherSummary, type UserRole } from './auth-api.ts'
 
@@ -309,6 +310,13 @@ function renderCourse(profile: Profile, course: CourseSummary): void {
   app.innerHTML = `${header(profile)}<main><section class="course-page student-course-page"><a class="back-link" href="/students">← Все ученики</a><p class="eyebrow">Курс ${escapeHtml(course.academicYear)}</p><h1>${escapeHtml(course.name ?? course.username)}</h1><div class="course-layout"><details class="student-course-details" open><summary>Об ученике${course.grade ? `<span class="student-course-grade"> · ${course.grade} класс</span>` : ''}</summary><dl><div><dt>Логин</dt><dd>${escapeHtml(course.username)}</dd></div><div><dt>Имя</dt><dd>${displayValue(course.name)}</dd></div><div><dt>Город</dt><dd>${displayValue(course.city)}</dd></div><div><dt>Класс</dt><dd>${course.grade ? `${course.grade} класс` : '<span class="empty-value">Не указано</span>'}</dd></div><div><dt>Контакт</dt><dd>${courseContact(course)}</dd></div></dl></details><div id="course-learning" class="course-materials"></div></div></section></main>${footer()}`
   bindHeader()
   const studentDetails = document.querySelector<HTMLDetailsElement>('.student-course-details')!
+  const sidebar = document.createElement('aside')
+  sidebar.className = 'student-course-sidebar'
+  studentDetails.before(sidebar)
+  sidebar.append(studentDetails)
+  const note = document.createElement('section')
+  sidebar.append(note)
+  mountTeacherNote(note, course.id)
   const mobile = window.matchMedia('(max-width: 760px)')
   const updateStudentDetails = () => {
     if (!studentDetails.isConnected) { mobile.removeEventListener('change', updateStudentDetails); return }

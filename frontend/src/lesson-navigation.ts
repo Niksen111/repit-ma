@@ -1,7 +1,7 @@
 import { type Lesson } from './courses-api.ts'
 import { lessonInstant } from './lesson-management.ts'
 
-export const LESSONS_PER_PAGE = 5
+export const LESSONS_PER_PAGE = 10
 
 export function selectLesson(lessons: Lesson[], selected: number | null, now = Date.now()): number | null {
   if (lessons.some(lesson => lesson.id === selected)) return selected
@@ -17,9 +17,9 @@ export function pageForLesson(lessons: Lesson[], selected: number | null): numbe
   return Math.floor(Math.max(0, lessons.findIndex(lesson => lesson.id === selected)) / LESSONS_PER_PAGE) + 1
 }
 
-export function lessonPage<T>(lessons: T[], requestedPage: number) {
-  const totalPages = Math.max(1, Math.ceil(lessons.length / LESSONS_PER_PAGE))
+export function lessonPage<T>(lessons: T[], requestedPage: number, pageSize = LESSONS_PER_PAGE) {
+  const totalPages = Math.max(1, Math.ceil(lessons.length / pageSize))
   const page = Math.min(totalPages, Math.max(1, requestedPage))
-  const offset = (page - 1) * LESSONS_PER_PAGE
-  return { page, totalPages, items: lessons.slice(offset, offset + LESSONS_PER_PAGE), start: lessons.length ? offset + 1 : 0, end: Math.min(offset + LESSONS_PER_PAGE, lessons.length) }
+  const offset = (page - 1) * pageSize
+  return { page, totalPages, items: lessons.slice(offset, offset + pageSize), start: lessons.length ? offset + 1 : 0, end: Math.min(offset + pageSize, lessons.length) }
 }

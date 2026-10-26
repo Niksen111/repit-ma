@@ -15,4 +15,6 @@ interface CourseMapper {
     fun findAll(): List<CourseResponse>
     fun findForUser(@Param("userId") userId: Long): List<CourseResponse>
     fun findById(@Param("courseId") courseId: Long): CourseResponse?
+    fun findTeacherNote(@Param("courseId") courseId: Long): String?
+    fun updateTeacherNote(@Param("courseId") courseId: Long, @Param("note") note: String): Int
 }

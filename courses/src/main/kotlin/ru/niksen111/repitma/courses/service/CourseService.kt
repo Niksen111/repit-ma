@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
 import ru.niksen111.repitma.courses.dto.CourseResponse
+import ru.niksen111.repitma.courses.dto.TeacherNote
 import ru.niksen111.repitma.courses.mapper.CourseMapper
 import ru.niksen111.repitma.users.entity.UserAccount
 import ru.niksen111.repitma.users.entity.UserRole
@@ -26,6 +27,17 @@ class CourseService(
 
     fun course(username: String, courseId: Long): CourseResponse =
         access.requireReader(username, courseId)
+
+    fun teacherNote(username: String, courseId: Long): TeacherNote {
+        access.requireTeacher(username, courseId)
+        return TeacherNote(courseMapper.findTeacherNote(courseId).orEmpty())
+    }
+
+    fun updateTeacherNote(username: String, courseId: Long, request: TeacherNote): TeacherNote {
+        access.requireTeacher(username, courseId)
+        courseMapper.updateTeacherNote(courseId, request.note)
+        return request
+    }
 
     private fun account(username: String): UserAccount =
         userMapper.findByUsername(username)

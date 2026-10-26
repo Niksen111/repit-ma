@@ -70,6 +70,42 @@ class CourseLearningTests(
     }
 
     @Test
+    fun `teacher notes persist per course and never appear in student responses`() {
+        val note = "Личная информация\nhttps://example.com/materials <script>alert(1)</script>"
+        val body = json.writeValueAsString(mapOf("note" to note))
+        assertEquals("", read("$base/teacher-note", teacher)["note"].asString())
+        assertEquals(note, write("PUT", "$base/teacher-note", teacher, body, 200)["note"].asString())
+        assertEquals(note, read("$base/teacher-note", teacher)["note"].asString())
+        assertEquals("", read("/api/courses/$otherCourseId/teacher-note", teacher)["note"].asString())
+
+        for (author in listOf(student, outsider, createUser(UserRole.TEACHER))) {
+            val expected = if (author.id == student.id) 403 else 404
+            mvc.perform(get("$base/teacher-note").with(auth(author))).andExpect(status().`is`(expected))
+            write("PUT", "$base/teacher-note", author, body, expected)
+        }
+        mvc.perform(get("$base/teacher-note")).andExpect(status().isUnauthorized)
+        mvc.perform(put("$base/teacher-note").contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isUnauthorized)
+        assertEquals(note, read("$base/teacher-note", teacher)["note"].asString())
+        for (url in listOf(base, "/api/courses", "/api/profile")) {
+            val response = read(url, student).toString()
+            assertFalse(response.contains("teacherNote"))
+            assertFalse(response.contains("teacher_note"))
+            assertFalse(response.contains("Личная информация"))
+        }
+
+        val admin = createUser(UserRole.ADMIN)
+        assertEquals(note, read("$base/teacher-note", admin)["note"].asString())
+        val tooLong = json.writeValueAsString(mapOf("note" to "x".repeat(10_001)))
+        write("PUT", "$base/teacher-note", teacher, tooLong, 400)
+        write("PUT", "$base/teacher-note", teacher, "{}", 400)
+        write("PUT", "$base/teacher-note", teacher, """{"note":null}""", 400)
+        assertEquals(note, read("$base/teacher-note", teacher)["note"].asString())
+        write("PUT", "$base/teacher-note", teacher, """{"note":""}""", 200)
+        assertEquals("", read("$base/teacher-note", teacher)["note"].asString())
+    }
+
+    @Test
     fun `lesson task solution lifecycle and grading lock`() {
         val lesson = createLesson()
         val lessonId = lesson["id"].asLong()

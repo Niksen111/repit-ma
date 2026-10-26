@@ -35,14 +35,15 @@ test('Empty courses and courses with only cancellations remain accessible', () =
   assert.equal(selectLesson([lessons[1]], null, now), 2)
 })
 
-test('Pages bound the list to five lessons and include every lesson exactly once', () => {
-  const many = Array.from({ length: 12 }, (_, index) => lesson(index + 1, '2026-10-08T16:00:00'))
+test('Pages bound the list to ten lessons and include every lesson exactly once', () => {
+  const many = Array.from({ length: 23 }, (_, index) => lesson(index + 1, '2026-10-08T16:00:00'))
   const pages = [1, 2, 3].map(page => lessonPage(many, page))
-  assert.deepEqual(pages.map(page => page.items.length), [5, 5, 2])
+  assert.deepEqual(pages.map(page => page.items.length), [10, 10, 3])
   assert.deepEqual(pages.flatMap(page => page.items), many)
-  assert.deepEqual(pages.map(({ start, end }) => [start, end]), [[1, 5], [6, 10], [11, 12]])
-  assert.equal(pageForLesson(many, 6), 2)
-  assert.equal(pageForLesson(many, 12), 3)
+  assert.deepEqual(pages.map(({ start, end }) => [start, end]), [[1, 10], [11, 20], [21, 23]])
+  assert.equal(pageForLesson(many, 10), 1)
+  assert.equal(pageForLesson(many, 11), 2)
+  assert.equal(pageForLesson(many, 23), 3)
   assert.equal(pageForLesson(many, 999), 1)
 })
 

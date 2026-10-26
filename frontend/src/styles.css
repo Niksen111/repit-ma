@@ -351,6 +351,28 @@ input:not([type="checkbox"]), select { width: 100%; padding: 15px 16px; border: 
 @media (prefers-reduced-motion: reduce) { .menu-toggle span { transition: none; } }
 
 .course-materials, .lesson-card, .homework-card { min-width: 0; }
+.student-course-sidebar { min-width: 0; }
+.teacher-note-panel { margin-top: 24px; }
+.teacher-note-panel > summary { padding: 0 0 14px; font-size: 14px; color: inherit; cursor: pointer; }
+@media (min-width: 761px) {
+  .teacher-note-panel > summary { list-style: none; cursor: default; opacity: .6; }
+  .teacher-note-panel > summary::-webkit-details-marker { display: none; }
+}
+.teacher-note { display: grid; gap: 14px; margin: 0; }
+.teacher-note p { margin: 0; }
+.teacher-note textarea { min-height: 320px; resize: vertical; background: #fff; font-weight: 400; line-height: 1.6; }
+.teacher-note-preview { max-height: 560px; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-weight: 700; line-height: 1.6; }
+.teacher-note-preview a { color: var(--accent); text-decoration: underline; }
+.teacher-note-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.teacher-note [hidden] { display: none !important; }
+@media (max-width: 760px) {
+  .teacher-note-panel { border: 1px solid #38453e33; border-radius: 14px; background: #edf1e9; }
+  .teacher-note-panel > summary { padding: 14px 16px; min-height: 44px; font-size: 13px; font-weight: 700; color: var(--accent); }
+  .teacher-note-panel[open] > summary { border-bottom: 1px solid #38453e22; }
+  .teacher-note { padding: 16px; }
+  .teacher-note-preview { font-size: 13px; }
+}
+.teacher-course-materials > #lesson-detail { margin-bottom: 28px; }
 .lesson-status { display: inline-flex; justify-self: start; width: fit-content; padding: 6px 12px; border-radius: 99px; background: #dce9df; color: #2d604e; font-size: 12px; font-weight: 700; }
 .lesson-status.scheduled { background: #ecece7; color: #59615d; }
 .lesson-status.past { background: #f5d7ae; color: #6b5a25; }
