@@ -1,4 +1,6 @@
 import './styles.css'
+import './easter-eggs.css'
+import { mountEasterEggs } from './easter-eggs.ts'
 import { mariaReviews, reviewLoginDestination } from './maria-reviews.ts'
 import { mountReviews, renderReviews } from './reviews.ts'
 import { getTeacherSite, renderTeacherContacts, teacherSites, type TeacherSite } from './teacher-site.ts'
@@ -33,7 +35,7 @@ function header(profile: Profile | null): string {
 }
 
 function footer(): string {
-  return '<footer><a class="logo" href="/">repit<span>ma</span></a><div class="footer-meta"><a href="/privacy">Политика конфиденциальности</a><p>© 2026 Repitma</p></div></footer>'
+  return '<footer><a class="logo" href="/">repit<span>ma</span></a><div class="footer-meta"><a href="/privacy">Политика конфиденциальности</a><p><button class="footer-surprise" type="button" data-math-party>© 2026 Repitma</button></p></div></footer>'
 }
 
 function escapeHtml(value: string | null): string {
@@ -466,3 +468,4 @@ async function start(): Promise<void> {
 }
 
 void start()
+mountEasterEggs()

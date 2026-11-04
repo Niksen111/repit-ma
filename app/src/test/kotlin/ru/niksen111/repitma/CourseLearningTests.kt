@@ -599,12 +599,15 @@ class CourseLearningTests(
     }
 
     @Test
-    fun `tasks can be completed without a solution and reopened only within the course`() {
+    fun `only course teachers and admins can complete tasks without a solution and reopen them`() {
         val lessonId = createLesson()["id"].asLong()
         val taskId = createTask(lessonId)
         val path = "$base/tasks/$taskId/completion"
         assertFalse(read("$base/lessons/$lessonId/tasks", student)[0]["completed"].asBoolean())
-        assertTrue(write("PUT", path, student, """{"completed":true}""", 200)["completed"].asBoolean())
+        for (completed in listOf(true, false)) write("PUT", path, student, """{"completed":$completed}""", 403)
+        assertFalse(read("$base/lessons/$lessonId/tasks", student)[0]["completed"].asBoolean())
+        assertTrue(write("PUT", path, teacher, """{"completed":true}""", 200)["completed"].asBoolean())
+        write("PUT", path, student, """{"completed":false}""", 403)
         assertEquals(0, read("/api/homework", student).size())
         assertEquals(0, read("/api/homework", teacher).size())
         assertEquals(0, count("SELECT COUNT(*) FROM solutions WHERE task_id = $taskId"))
@@ -617,7 +620,7 @@ class CourseLearningTests(
         write("PUT", "/api/courses/$otherCourseId/tasks/$taskId/completion", teacher, """{"completed":false}""", 404)
         mvc.perform(put(path).contentType(MediaType.APPLICATION_JSON).content("""{"completed":true}"""))
             .andExpect(status().isUnauthorized)
-        for (body in listOf("{}", """{"completed":null}""")) write("PUT", path, student, body, 400)
+        for (body in listOf("{}", """{"completed":null}""")) write("PUT", path, teacher, body, 400)
         assertFalse(write("PUT", path, teacher, """{"completed":false}""", 200)["completed"].asBoolean())
         assertEquals(taskId, read("/api/homework", student)[0]["taskId"].asLong())
         write("PUT", path, createUser(UserRole.ADMIN), """{"completed":true}""", 200)
@@ -625,9 +628,11 @@ class CourseLearningTests(
         val solutionId = createSolution(taskId)
         assertFalse(read("$base/lessons/$lessonId/tasks", student)[0]["completed"].asBoolean())
         assertEquals(taskId, read("/api/homework", teacher)[0]["taskId"].asLong())
-        for (author in listOf(student, teacher)) write("PUT", path, author, """{"completed":true}""", 409)
+        write("PUT", path, student, """{"completed":true}""", 403)
+        write("PUT", path, teacher, """{"completed":true}""", 409)
         write("PUT", "$base/solutions/$solutionId/grade", teacher, """{"grade":false}""", 200)
-        write("PUT", path, student, """{"completed":false}""", 409)
+        write("PUT", path, student, """{"completed":false}""", 403)
+        write("PUT", path, teacher, """{"completed":false}""", 409)
     }
 
     @Test

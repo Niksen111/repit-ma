@@ -7,10 +7,14 @@ test('Manual completion is distinct from submission and a grade always determine
   const task = { id: 1, completed: true }
   assert.equal(homeworkStatus(task, null), 'Сделано без решения')
   assert.equal(homeworkStatus({ ...task, completed: false }, null), 'Не отправлено')
-  assert.match(completionMarkup(task, null), /aria-pressed="true".*Снять отметку/)
+  assert.match(completionMarkup(task, null, true), /aria-pressed="true".*Снять отметку/)
+  assert.match(completionMarkup({ ...task, completed: false }, null, true), /data-complete/)
+  assert.equal(completionMarkup(task, null, false), '')
+  assert.equal(completionMarkup({ ...task, completed: false }, null, false), '')
   for (const [grade, expected] of [[null, 'Ожидает проверки'], [false, 'Незачёт'], [true, 'Зачёт']]) {
     assert.equal(homeworkStatus(task, { grade }), expected)
-    assert.equal(completionMarkup(task, { grade }), '')
+    assert.equal(completionMarkup(task, { grade }, true), '')
+    assert.equal(completionMarkup(task, { grade }, false), '')
   }
 })
 

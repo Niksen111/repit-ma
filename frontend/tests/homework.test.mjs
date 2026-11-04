@@ -18,7 +18,7 @@ test('Homework queue offers the right participant and action for each role with 
   assert.match(student, /Преподаватель: <strong>Преподаватель<\/strong>/)
   assert.match(student, /Ожидает сдачи/)
   assert.match(student, /Открыть задание/)
-  assert.match(student, /data-complete>Сделано без решения/)
+  assert.doesNotMatch(student, /data-complete|Сделано без решения/)
   for (const markup of [teacher, student]) {
     assert.match(markup, /href="\/courses\/5\?lesson=10&amp;task=25"/)
     assert.match(markup, /2026-11-04T15:00:00\+03:00/)

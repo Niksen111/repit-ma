@@ -62,7 +62,7 @@ class TaskService(
 
     @Transactional
     fun complete(username: String, courseId: Long, taskId: Long, request: TaskCompletionRequest): TaskResponse {
-        access.requireReader(username, courseId)
+        access.requireTeacher(username, courseId)
         val task = access.task(courseId, taskId)
         if (solutionMapper.findByTask(taskId) != null) {
             throw ResponseStatusException(HttpStatus.CONFLICT, "У задания уже есть решение. Используйте его статус и оценку.")

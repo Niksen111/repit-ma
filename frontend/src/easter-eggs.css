@@ -1,0 +1,29 @@
+.easter-eggs { position: fixed; inset: 0; z-index: 20; overflow: hidden; pointer-events: none; }
+.egg-cat { position: absolute; right: max(16px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); width: 114px; height: 94px; padding: 0; border: 0; background: transparent; color: #66706a; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
+.egg-cat svg { width: 100%; height: 100%; overflow: visible; }
+.egg-cat-body { transform-origin: 65px 78px; animation: egg-breathe 3s ease-in-out infinite; }
+.egg-cat-dream { position: absolute; top: 2px; right: 5px; font: 700 14px/1.4 Manrope, Arial, sans-serif; animation: egg-dream 3s ease-in-out infinite; }
+.egg-cat.is-awake .egg-cat-body { animation: egg-stretch 1.5s ease-in-out; }
+.egg-cat.is-awake .egg-cat-dream { color: #bc6a55; animation: egg-purr 1s ease-out both; }
+.egg-cat:focus-visible { outline: 2px solid #2d604e; outline-offset: 3px; border-radius: 18px; }
+.egg-goose { position: absolute; top: 0; left: 0; width: 100px; height: 110px; will-change: transform; }
+.egg-goose svg { display: block; width: 100%; height: 100%; transform: scaleX(var(--goose-direction, 1)); }
+.egg-goose-wing { transform-origin: 50px 66px; }
+.egg-goose.is-fighting .egg-goose-wing { animation: egg-flap .25s ease-in-out infinite alternate; }
+.egg-goose-controls { position: absolute; bottom: max(12px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; width: max-content; max-width: calc(100% - 24px); padding: 4px; border: 1px solid #38453e33; border-radius: 14px; background: #fffdf5; color: #38453e; box-shadow: 0 4px 18px #38453e18; font-size: 12px; }
+.egg-goose-controls button { flex-shrink: 0; width: 44px; height: 44px; border: 0; border-radius: 10px; background: #edf1e9; color: inherit; font: inherit; cursor: pointer; pointer-events: auto; }
+.egg-math-rain { position: absolute; inset: 0; }
+.egg-math-rain span { position: absolute; top: -60px; left: var(--left); color: var(--color); font: 700 26px/1.2 Unbounded, Arial, sans-serif; animation: egg-fall 3s var(--delay) ease-in both; }
+.footer-surprise { min-height: 44px; padding: 6px 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.footer-surprise:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 3px; }
+.site-header .logo, footer .logo, .footer-surprise { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+@keyframes egg-breathe { 50% { transform: scaleY(1.04); } }
+@keyframes egg-dream { 50% { transform: translateY(-5px); opacity: .5; } }
+@keyframes egg-stretch { 50% { transform: scaleX(1.07) translateY(-4px); } }
+@keyframes egg-purr { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(-4px); } }
+@keyframes egg-flap { to { transform: rotate(-22deg); } }
+@keyframes egg-fall { from { transform: translateY(0) rotate(0); opacity: 0; } 10% { opacity: .85; } to { transform: translateY(calc(100dvh + 100px)) rotate(var(--tilt)); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .egg-cat-body, .egg-cat-dream, .egg-cat.is-awake .egg-cat-body, .egg-cat.is-awake .egg-cat-dream, .egg-goose.is-fighting .egg-goose-wing { animation: none; }
+  .egg-math-rain span { top: 35%; animation: none; transform: rotate(var(--tilt)); }
+}
