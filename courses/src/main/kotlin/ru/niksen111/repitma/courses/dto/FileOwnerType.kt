@@ -5,4 +5,5 @@ enum class FileOwnerType {
     RECEIPT,
     TASK,
     SOLUTION,
+    GRADE,
 }

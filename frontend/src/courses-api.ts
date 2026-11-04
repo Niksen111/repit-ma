@@ -6,10 +6,15 @@ export interface Lesson { id: number; title: string; description: string | null;
 export interface RecurringLessonSlot { dayOfWeek: number; startTime: string }
 export interface RecurringLessonSchedule { id: number; courseId: number; title: string; description: string | null; startDate: string; endDate: string | null; active: boolean; slots: RecurringLessonSlot[] }
 export interface ScheduledLesson { courseId: number; academicYear: string; studentUsername: string; studentName: string | null; lesson: Lesson; receipts: Attachment[] }
-export interface Task { id: number; lessonId: number; title: string; description: string | null }
+export interface Task { id: number; lessonId: number; title: string; description: string | null; completed: boolean }
 export interface Solution { id: number; taskId: number; description: string | null; grade: boolean | null; teacherComment: string | null; gradedAt: string | null }
 export interface Attachment { id: number; originalName: string; contentType: string }
-export type OwnerType = 'LESSON' | 'TASK' | 'SOLUTION' | 'RECEIPT'
+export type OwnerType = 'LESSON' | 'TASK' | 'SOLUTION' | 'RECEIPT' | 'GRADE'
+
+export function validateUploadFile(file: File): void {
+  if (file.size > 25 * 1024 * 1024) throw new Error(`«${file.name}»: максимальный размер — 25 МиБ.`)
+  if (file.size === 0) throw new Error(`«${file.name}»: файл пуст.`)
+}
 
 export class CourseApi {
   private courseId: number
@@ -42,8 +47,7 @@ export class CourseApi {
   }
 
   async upload(type: OwnerType, ownerId: number, file: File): Promise<Attachment> {
-    if (file.size > 25 * 1024 * 1024) throw new Error(`«${file.name}»: максимальный размер — 25 МиБ.`)
-    if (file.size === 0) throw new Error(`«${file.name}»: файл пуст.`)
+    validateUploadFile(file)
     const body = new FormData()
     body.append('file', file)
     return this.request(this.filesPath(type, ownerId), 'POST', body)

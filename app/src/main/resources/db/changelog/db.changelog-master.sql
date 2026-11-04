@@ -208,3 +208,17 @@ ALTER TABLE recurring_lesson_slots ADD COLUMN active INTEGER NOT NULL DEFAULT 1 
 ALTER TABLE courses ADD COLUMN teacher_note TEXT NOT NULL DEFAULT '';
 
 --rollback ALTER TABLE courses DROP COLUMN teacher_note;
+
+--changeset niksen111:011-homework-completion-and-grade-files
+ALTER TABLE tasks ADD COLUMN completed INTEGER NOT NULL DEFAULT 0 CHECK (completed IN (0, 1));
+
+CREATE TABLE grade_files (
+    solution_id INTEGER NOT NULL,
+    file_id INTEGER NOT NULL,
+    PRIMARY KEY (solution_id, file_id),
+    FOREIGN KEY (solution_id) REFERENCES solutions (id),
+    FOREIGN KEY (file_id) REFERENCES course_files (id)
+);
+
+--rollback DROP TABLE grade_files;
+--rollback ALTER TABLE tasks DROP COLUMN completed;

@@ -75,4 +75,22 @@
         WHERE link.solution_id = #{solutionId}
         ORDER BY f.id
     </select>
+    <insert id="attachGradeFile">
+        INSERT INTO grade_files (solution_id, file_id) VALUES (#{solutionId}, #{fileId})
+    </insert>
+
+    <delete id="detachGradeFile">
+        DELETE FROM grade_files WHERE solution_id = #{solutionId} AND file_id = #{fileId}
+    </delete>
+
+    <select id="containsGradeFile" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM grade_files WHERE solution_id = #{solutionId} AND file_id = #{fileId})
+    </select>
+
+    <select id="findGradeFiles" resultMap="ru.niksen111.repitma.courses.mapper.FileMapper.fileResponse">
+        SELECT f.id, f.original_name, f.content_type
+        FROM course_files f JOIN grade_files link ON link.file_id = f.id
+        WHERE link.solution_id = #{solutionId}
+        ORDER BY f.id
+    </select>
 </mapper>

@@ -5,4 +5,5 @@ data class Task(
     val lessonId: Long,
     val title: String,
     val description: String?,
+    val completed: Boolean = false,
 )

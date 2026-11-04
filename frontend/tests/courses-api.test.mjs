@@ -9,7 +9,7 @@ const api = new CourseApi(7)
 
 test('Preview bytes use authenticated attachment access for every owner and support cancellation', async () => {
   const signal = new AbortController().signal
-  for (const owner of ['LESSON', 'TASK', 'SOLUTION', 'RECEIPT']) {
+  for (const owner of ['LESSON', 'TASK', 'SOLUTION', 'RECEIPT', 'GRADE']) {
     globalThis.fetch = async (url, options) => {
       assert.equal(url, `/api/courses/7/files/10?ownerType=${owner}&ownerId=9`)
       assert.equal(options.headers.Authorization, 'Basic test')

@@ -9,6 +9,7 @@ import ru.niksen111.repitma.courses.entity.Task
 interface TaskMapper {
     fun insert(task: Task): Int
     fun update(task: Task): Int
+    fun updateCompletion(@Param("taskId") taskId: Long, @Param("completed") completed: Boolean): Int
     fun delete(@Param("taskId") taskId: Long): Int
     fun findById(@Param("taskId") taskId: Long): Task?
     fun findByLesson(@Param("lessonId") lessonId: Long): List<Task>

@@ -7,6 +7,7 @@ data class TaskResponse(
     val lessonId: Long,
     val title: String,
     val description: String?,
+    val completed: Boolean,
 )
 
 fun Task.toResponse() = TaskResponse(
@@ -14,4 +15,5 @@ fun Task.toResponse() = TaskResponse(
     lessonId = lessonId,
     title = title,
     description = description,
+    completed = completed,
 )

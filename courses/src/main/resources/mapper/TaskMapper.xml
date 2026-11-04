@@ -8,6 +8,7 @@
         <result property="lessonId" column="lesson_id"/>
         <result property="title" column="title"/>
         <result property="description" column="description"/>
+        <result property="completed" column="completed"/>
     </resultMap>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
@@ -27,14 +28,18 @@
         WHERE id = #{taskId}
     </delete>
 
+    <update id="updateCompletion">
+        UPDATE tasks SET completed = #{completed} WHERE id = #{taskId}
+    </update>
+
     <select id="findById" resultMap="task">
-        SELECT id, lesson_id, title, description
+        SELECT id, lesson_id, title, description, completed
         FROM tasks
         WHERE id = #{taskId}
     </select>
 
     <select id="findByLesson" resultMap="task">
-        SELECT id, lesson_id, title, description
+        SELECT id, lesson_id, title, description, completed
         FROM tasks
         WHERE lesson_id = #{lessonId}
         ORDER BY id

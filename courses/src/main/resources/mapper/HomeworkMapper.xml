@@ -34,7 +34,7 @@
 
     <select id="findAwaitingSubmission" resultMap="homework">
         <include refid="homeworkSelect"/>
-        WHERE c.student_id = #{studentId} AND s.id IS NULL
+        WHERE c.student_id = #{studentId} AND s.id IS NULL AND t.completed = 0
         ORDER BY l.scheduled_at, t.id
     </select>
 

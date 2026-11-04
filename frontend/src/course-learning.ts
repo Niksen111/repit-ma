@@ -4,10 +4,20 @@ import { CourseApi, type Attachment, type Lesson, type OwnerType, type Solution,
 import { bindLessonManagement, lessonDate, lessonStatus, receiptsMarkup, statusBadge, trackingMarkup } from './lesson-management.ts'
 import { mountLessonScheduling } from './recurring-lessons.ts'
 import { lessonPage, pageForLesson, selectLesson } from './lesson-navigation.ts'
+import { saveGradeWithFiles } from './solution-feedback.ts'
 
 const escape = (value: string | null): string => (value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 const description = (value: string | null): string => value ? `<p class="material-description">${escape(value)}</p>` : ''
 const date = (value: string): string => new Date(value).toLocaleString('ru-RU', { dateStyle: 'long', timeStyle: 'short' })
+
+export function homeworkStatus(task: Task, solution: Solution | null): string {
+  if (solution) return solution.grade === null ? 'Ожидает проверки' : solution.grade ? 'Зачёт' : 'Незачёт'
+  return task.completed ? 'Сделано без решения' : 'Не отправлено'
+}
+
+export function completionMarkup(task: Task, solution: Solution | null): string {
+  return solution ? '' : `<button class="secondary-button" type="button" data-complete aria-pressed="${task.completed}">${task.completed ? 'Снять отметку «Сделано»' : 'Отметить сделанным без решения'}</button>`
+}
 
 export function mountCourseLearning(root: HTMLElement, profile: Profile, courseId: number): void {
   const api = new CourseApi(courseId)
@@ -127,7 +137,7 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
   }
 
   function filesMarkup(files: Attachment[], type: OwnerType, ownerId: number, editable: boolean): string {
-    return `<section class="attachment-section" data-owner="${type}" data-owner-id="${ownerId}"><h4>${type === 'LESSON' ? 'Материалы занятия' : type === 'TASK' ? 'Файлы задания' : 'Файлы решения'}</h4><ul class="attachment-list">${files.map(file => `<li><button class="file-download" type="button" data-download="${file.id}">${escape(file.originalName)}</button>${previewContentType(file) ? `<button class="file-preview-button" type="button" data-preview="${file.id}" aria-label="Предпросмотр ${escape(file.originalName)}">Предпросмотр</button>` : ''}${editable ? `<button class="file-remove" type="button" data-remove="${file.id}" aria-label="Удалить файл ${escape(file.originalName)}">Удалить</button>` : ''}</li>`).join('')}</ul>${files.length ? '' : '<p class="muted">Файлов пока нет</p>'}${editable ? '<label class="upload-label">Добавить файлы<input type="file" multiple><small>До 25 МиБ каждый. Изображения и документы.</small></label>' : ''}<p class="status" role="status"></p></section>`
+    return `<section class="attachment-section" data-owner="${type}" data-owner-id="${ownerId}"><h4>${type === 'LESSON' ? 'Материалы занятия' : type === 'TASK' ? 'Файлы задания' : type === 'GRADE' ? 'Файлы к оценке' : 'Файлы решения'}</h4><ul class="attachment-list">${files.map(file => `<li><button class="file-download" type="button" data-download="${file.id}">${escape(file.originalName)}</button>${previewContentType(file) ? `<button class="file-preview-button" type="button" data-preview="${file.id}" aria-label="Предпросмотр ${escape(file.originalName)}">Предпросмотр</button>` : ''}${editable ? `<button class="file-remove" type="button" data-remove="${file.id}" aria-label="Удалить файл ${escape(file.originalName)}">Удалить</button>` : ''}</li>`).join('')}</ul>${files.length ? '' : '<p class="muted">Файлов пока нет</p>'}${editable ? '<label class="upload-label">Добавить файлы<input type="file" multiple><small>До 25 МиБ каждый. Изображения и документы.</small></label>' : ''}<p class="status" role="status"></p></section>`
   }
 
   async function loadDetail(): Promise<void> {
@@ -149,14 +159,17 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
           api.request<Attachment[]>(api.filesPath('TASK', task.id)),
           api.request<Solution | null>(`/tasks/${task.id}/solution`),
         ])
-        const solutionFiles = solution ? await api.request<Attachment[]>(api.filesPath('SOLUTION', solution.id)) : []
-        return { task, taskFiles, solution, solutionFiles }
+        const [solutionFiles, gradeFiles] = solution ? await Promise.all([
+          api.request<Attachment[]>(api.filesPath('SOLUTION', solution.id)),
+          api.request<Attachment[]>(api.filesPath('GRADE', solution.id)),
+        ]) : [[], []]
+        return { task, taskFiles, solution, solutionFiles, gradeFiles }
       }))
       if (version !== revision) return
-      detail.innerHTML = `<article class="lesson-card" data-lesson-management><div class="materials-heading"><h2>${escape(lesson.title)}</h2>${teacher ? '<div class="material-actions"><button type="button" class="secondary-button" id="edit-lesson">Редактировать</button><button type="button" class="danger-button" id="delete-lesson">Удалить</button></div>' : ''}</div><div class="lesson-meta"><time class="muted" datetime="${escape(lesson.scheduledAt)}+03:00">${escape(lessonDate(lesson.scheduledAt))} МСК</time>${trackingMarkup(lesson, teacher, true)}${lesson.recurringScheduleId ? '<span class="lesson-series-label">По недельному расписанию</span>' : ''}</div><p class="status" role="status" data-tracking-message></p>${description(lesson.description)}${filesMarkup(files, 'LESSON', lesson.id, teacher)}${receiptsMarkup(receipts, teacher)}<div class="materials-heading homework-heading"><h3>Домашние задания</h3>${teacher ? '<button class="secondary-button" type="button" id="add-task">Добавить домашку</button>' : ''}</div>${tasks.length ? '' : '<p class="muted">Домашних заданий пока нет</p>'}<div id="homework-list">${taskDetails.map(({ task, taskFiles, solution, solutionFiles }) => {
+      detail.innerHTML = `<article class="lesson-card" data-lesson-management><div class="materials-heading"><h2>${escape(lesson.title)}</h2>${teacher ? '<div class="material-actions"><button type="button" class="secondary-button" id="edit-lesson">Редактировать</button><button type="button" class="danger-button" id="delete-lesson">Удалить</button></div>' : ''}</div><div class="lesson-meta"><time class="muted" datetime="${escape(lesson.scheduledAt)}+03:00">${escape(lessonDate(lesson.scheduledAt))} МСК</time>${trackingMarkup(lesson, teacher, true)}${lesson.recurringScheduleId ? '<span class="lesson-series-label">По недельному расписанию</span>' : ''}</div><p class="status" role="status" data-tracking-message></p>${description(lesson.description)}${filesMarkup(files, 'LESSON', lesson.id, teacher)}${receiptsMarkup(receipts, teacher)}<div class="materials-heading homework-heading"><h3>Домашние задания</h3>${teacher ? '<button class="secondary-button" type="button" id="add-task">Добавить домашку</button>' : ''}</div>${tasks.length ? '' : '<p class="muted">Домашних заданий пока нет</p>'}<div id="homework-list">${taskDetails.map(({ task, taskFiles, solution, solutionFiles, gradeFiles }) => {
         const editable = profile.role === 'STUDENT' && (solution === null || solution.grade === null)
-        const status = !solution ? 'Не отправлено' : solution.grade === null ? 'Ожидает проверки' : solution.grade ? 'Зачёт' : 'Незачёт'
-        return `<article class="homework-card" data-task="${task.id}"><div class="materials-heading"><h3>${escape(task.title)}</h3>${teacher ? '<div class="material-actions"><button class="secondary-button" type="button" data-edit-task>Редактировать</button><button class="danger-button" type="button" data-delete-task>Удалить</button></div>' : ''}</div>${description(task.description)}${filesMarkup(taskFiles, 'TASK', task.id, teacher)}<section class="solution-section"><div class="materials-heading"><h4>Решение</h4><span class="grade-badge ${solution?.grade === true ? 'passed' : solution?.grade === false ? 'failed' : ''}">${status}</span></div>${description(solution?.description ?? null)}${solution ? filesMarkup(solutionFiles, 'SOLUTION', solution.id, editable) : ''}${solution?.teacherComment ? `<div class="teacher-comment"><h4>Комментарий преподавателя</h4>${description(solution.teacherComment)}</div>` : ''}${solution?.gradedAt ? `<p class="muted">Проверено: ${escape(date(solution.gradedAt))}</p>` : ''}${editable ? `<button class="primary-button" type="button" data-solution>${solution ? 'Редактировать решение' : 'Отправить решение'}</button>${!solution ? '<p class="muted">Можно отправить ответ текстом или сохранить решение и прикрепить файлы.</p>' : ''}` : profile.role === 'STUDENT' ? '<p class="muted">Решение оценено. Редактирование закрыто.</p>' : ''}${teacher && solution ? '<button class="primary-button" type="button" data-grade>Оценить решение</button>' : ''}</section><p class="status" role="status" data-task-message></p></article>`
+        const status = homeworkStatus(task, solution)
+        return `<article class="homework-card" data-task="${task.id}"><div class="materials-heading"><h3>${escape(task.title)}</h3>${teacher ? '<div class="material-actions"><button class="secondary-button" type="button" data-edit-task>Редактировать</button><button class="danger-button" type="button" data-delete-task>Удалить</button></div>' : ''}</div>${description(task.description)}${filesMarkup(taskFiles, 'TASK', task.id, teacher)}<section class="solution-section"><div class="materials-heading"><h4>Решение</h4><span class="grade-badge ${solution?.grade === true || (!solution && task.completed) ? 'passed' : solution?.grade === false ? 'failed' : ''}">${status}</span></div>${description(solution?.description ?? null)}${solution ? filesMarkup(solutionFiles, 'SOLUTION', solution.id, editable) : ''}${completionMarkup(task, solution)}${solution?.teacherComment ? `<div class="teacher-comment"><h4>Комментарий преподавателя</h4>${description(solution.teacherComment)}</div>` : ''}${solution && solution.grade !== null ? filesMarkup(gradeFiles, 'GRADE', solution.id, teacher) : ''}${solution?.gradedAt ? `<p class="muted">Проверено: ${escape(date(solution.gradedAt))}</p>` : ''}${editable ? `<button class="primary-button" type="button" data-solution>${solution ? 'Редактировать решение' : 'Отправить решение'}</button>${!solution ? '<p class="muted">Можно отправить ответ текстом или сохранить решение и прикрепить файлы.</p>' : ''}` : profile.role === 'STUDENT' ? '<p class="muted">Решение оценено. Редактирование закрыто.</p>' : ''}${teacher && solution ? '<button class="primary-button" type="button" data-grade>Оценить решение</button>' : ''}</section><p class="status" role="status" data-task-message></p></article>`
       }).join('')}</div><p class="status" role="status" id="detail-message"></p></article>`
       const detailMessage = detail.querySelector<HTMLElement>('#detail-message')!
       bindLessonManagement(detail.querySelector<HTMLElement>('[data-lesson-management]')!, api, lesson, receipts, loadLessons)
@@ -172,6 +185,12 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
       detail.querySelector('#add-task')?.addEventListener('click', () => taskEditor())
       taskDetails.forEach(({ task, solution }) => {
         const card = detail.querySelector<HTMLElement>(`[data-task="${task.id}"]`)!
+        card.querySelector('[data-complete]')?.addEventListener('click', event => {
+          void act(event.currentTarget as HTMLButtonElement, async () => {
+            await api.request(`/tasks/${task.id}/completion`, 'PUT', { completed: !task.completed })
+            await loadDetail()
+          }, card.querySelector<HTMLElement>('[data-task-message]')!)
+        })
         card.querySelector('[data-edit-task]')?.addEventListener('click', () => taskEditor(task))
         card.querySelector('[data-delete-task]')?.addEventListener('click', event => {
           if (!confirm('Удалить домашнее задание вместе с решением и файлами?')) return
@@ -181,15 +200,19 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
           await api.request(solution ? `/solutions/${solution.id}` : `/tasks/${task.id}/solution`, solution ? 'PUT' : 'POST', { description: String(data.get('description') ?? '').trim() || null })
           await loadDetail()
         }))
-        card.querySelector('[data-grade]')?.addEventListener('click', () => openEditor('Проверка решения', `<label>Оценка<select name="grade" required><option value="" ${solution?.grade === null ? 'selected' : ''} disabled>Выберите оценку</option><option value="true" ${solution?.grade === true ? 'selected' : ''}>Зачёт</option><option value="false" ${solution?.grade === false ? 'selected' : ''}>Незачёт</option></select></label><label>Комментарий<textarea name="teacherComment" maxlength="10000" rows="5">${escape(solution?.teacherComment ?? '')}</textarea></label><p class="muted">Любая оценка закрывает редактирование решения ученику.</p>`, async data => {
-          await api.request(`/solutions/${solution!.id}/grade`, 'PUT', { grade: data.get('grade') === 'true', teacherComment: String(data.get('teacherComment') ?? '').trim() || null })
+        card.querySelector('[data-grade]')?.addEventListener('click', () => openEditor('Проверка решения', `<label>Оценка<select name="grade" required><option value="" ${solution?.grade === null ? 'selected' : ''} disabled>Выберите оценку</option><option value="true" ${solution?.grade === true ? 'selected' : ''}>Зачёт</option><option value="false" ${solution?.grade === false ? 'selected' : ''}>Незачёт</option></select></label><label>Комментарий<textarea name="teacherComment" maxlength="10000" rows="5">${escape(solution?.teacherComment ?? '')}</textarea></label><label class="upload-label">Файлы к оценке<input type="file" name="gradeFiles" multiple><small>До 25 МиБ каждый. Можно прикрепить разбор или исправленную работу.</small></label><p class="muted">Любая оценка закрывает редактирование решения ученику.</p>`, async data => {
+          const failures = await saveGradeWithFiles(api, solution!.id, data)
           await loadDetail()
+          if (failures.length) report(new Error(`Оценка сохранена. Не удалось загрузить: ${failures.join('; ')}. Добавьте эти файлы в блоке «Файлы к оценке».`))
         }))
       })
       const attachments = new Map<string, Attachment[]>([[`LESSON:${lesson.id}`, files]])
-      taskDetails.forEach(({ task, taskFiles, solution, solutionFiles }) => {
+      taskDetails.forEach(({ task, taskFiles, solution, solutionFiles, gradeFiles }) => {
         attachments.set(`TASK:${task.id}`, taskFiles)
-        if (solution) attachments.set(`SOLUTION:${solution.id}`, solutionFiles)
+        if (solution) {
+          attachments.set(`SOLUTION:${solution.id}`, solutionFiles)
+          attachments.set(`GRADE:${solution.id}`, gradeFiles)
+        }
       })
       detail.querySelectorAll<HTMLElement>('[data-owner]').forEach(section => {
         const type = section.dataset.owner as OwnerType

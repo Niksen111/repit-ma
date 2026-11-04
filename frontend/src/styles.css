@@ -486,6 +486,8 @@ input:not([type="checkbox"]), select { width: 100%; padding: 15px 16px; border: 
 .homework-participant { line-height: 1.6; }
 .homework-excerpt { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; line-height: 1.6; }
 .homework-queue-card .primary-button { display: inline-block; margin-top: 8px; }
+.homework-queue-card .secondary-button { margin-top: 8px; margin-left: 8px; }
+.solution-section > [data-complete] { margin: 12px 8px 12px 0; }
 .homework-card[data-task] { scroll-margin-top: 20px; }
 .teacher-comment { border-left: 3px solid var(--accent); padding-left: 16px; margin: 20px 0; }
 .teacher-comment h4 { margin-bottom: 0; }

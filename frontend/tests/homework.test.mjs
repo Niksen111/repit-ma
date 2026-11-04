@@ -13,10 +13,12 @@ test('Homework queue offers the right participant and action for each role with 
   assert.match(teacher, /Ученик: <strong>Ученик<\/strong>/)
   assert.match(teacher, /Ожидает проверки/)
   assert.match(teacher, /Проверить решение/)
+  assert.doesNotMatch(teacher, /data-complete/)
   const student = homeworkMarkup([item], false)
   assert.match(student, /Преподаватель: <strong>Преподаватель<\/strong>/)
   assert.match(student, /Ожидает сдачи/)
   assert.match(student, /Открыть задание/)
+  assert.match(student, /data-complete>Сделано без решения/)
   for (const markup of [teacher, student]) {
     assert.match(markup, /href="\/courses\/5\?lesson=10&amp;task=25"/)
     assert.match(markup, /2026-11-04T15:00:00\+03:00/)
@@ -36,5 +38,5 @@ test('Homework queue escapes uploaded text and falls back to usernames', () => {
 
 test('Each role has an explicit empty queue state', () => {
   assert.match(homeworkMarkup([], true), /Работ на проверку пока нет/)
-  assert.match(homeworkMarkup([], false), /Все домашние задания сданы/)
+  assert.match(homeworkMarkup([], false), /Нет заданий, ожидающих сдачи/)
 })

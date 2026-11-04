@@ -11,11 +11,13 @@ import ru.niksen111.repitma.courses.dto.SolutionResponse
 import ru.niksen111.repitma.courses.dto.toResponse
 import ru.niksen111.repitma.courses.entity.Solution
 import ru.niksen111.repitma.courses.mapper.SolutionMapper
+import ru.niksen111.repitma.courses.mapper.TaskMapper
 
 @Service
 class SolutionService(
     private val access: CourseAccessService,
     private val solutionMapper: SolutionMapper,
+    private val taskMapper: TaskMapper,
 ) {
     fun findForTask(username: String, courseId: Long, taskId: Long): SolutionResponse? {
         access.requireReader(username, courseId)
@@ -39,6 +41,7 @@ class SolutionService(
         if (solutionMapper.insert(solution) != 1) {
             throw ResponseStatusException(HttpStatus.CONFLICT, "Решение уже отправлено")
         }
+        taskMapper.updateCompletion(taskId, false)
         return solution.toResponse()
     }
 

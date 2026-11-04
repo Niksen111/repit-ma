@@ -598,6 +598,99 @@ class CourseLearningTests(
         assertTrue(adminTasks.containsAll(listOf(ownTask, siblingTask, otherTask)))
     }
 
+    @Test
+    fun `tasks can be completed without a solution and reopened only within the course`() {
+        val lessonId = createLesson()["id"].asLong()
+        val taskId = createTask(lessonId)
+        val path = "$base/tasks/$taskId/completion"
+        assertFalse(read("$base/lessons/$lessonId/tasks", student)[0]["completed"].asBoolean())
+        assertTrue(write("PUT", path, student, """{"completed":true}""", 200)["completed"].asBoolean())
+        assertEquals(0, read("/api/homework", student).size())
+        assertEquals(0, read("/api/homework", teacher).size())
+        assertEquals(0, count("SELECT COUNT(*) FROM solutions WHERE task_id = $taskId"))
+        write("PUT", "$base/tasks/$taskId", teacher, """{"title":"Обновлённое задание"}""", 200)
+        assertTrue(read("$base/lessons/$lessonId/tasks", teacher)[0]["completed"].asBoolean())
+
+        for (author in listOf(outsider, createUser(UserRole.TEACHER))) {
+            write("PUT", path, author, """{"completed":false}""", 404)
+        }
+        write("PUT", "/api/courses/$otherCourseId/tasks/$taskId/completion", teacher, """{"completed":false}""", 404)
+        mvc.perform(put(path).contentType(MediaType.APPLICATION_JSON).content("""{"completed":true}"""))
+            .andExpect(status().isUnauthorized)
+        for (body in listOf("{}", """{"completed":null}""")) write("PUT", path, student, body, 400)
+        assertFalse(write("PUT", path, teacher, """{"completed":false}""", 200)["completed"].asBoolean())
+        assertEquals(taskId, read("/api/homework", student)[0]["taskId"].asLong())
+        write("PUT", path, createUser(UserRole.ADMIN), """{"completed":true}""", 200)
+
+        val solutionId = createSolution(taskId)
+        assertFalse(read("$base/lessons/$lessonId/tasks", student)[0]["completed"].asBoolean())
+        assertEquals(taskId, read("/api/homework", teacher)[0]["taskId"].asLong())
+        for (author in listOf(student, teacher)) write("PUT", path, author, """{"completed":true}""", 409)
+        write("PUT", "$base/solutions/$solutionId/grade", teacher, """{"grade":false}""", 200)
+        write("PUT", path, student, """{"completed":false}""", 409)
+    }
+
+    @Test
+    fun `grade attachments are visible to student and editable only by teacher after grading`() {
+        val lessonId = createLesson()["id"].asLong()
+        val taskId = createTask(lessonId)
+        val solutionId = createSolution(taskId)
+        val before = count("SELECT COUNT(*) FROM course_files")
+        upload("GRADE", solutionId, teacher, 409)
+        assertEquals(before, count("SELECT COUNT(*) FROM course_files"))
+        write("PUT", "$base/solutions/$solutionId/grade", teacher, """{"grade":false,"teacherComment":"Разбор"}""", 200)
+        val fileId = upload("GRADE", solutionId, teacher)["id"].asLong()
+        val params = "ownerType=GRADE&ownerId=$solutionId"
+        assertEquals(0, read("$base/files?ownerType=SOLUTION&ownerId=$solutionId", student).size())
+        assertEquals(fileId, read("$base/files?$params", student)[0]["id"].asLong())
+        val download = mvc.perform(get("$base/files/$fileId?$params").with(auth(student)))
+            .andExpect(status().isOk).andReturn().response
+        assertEquals("answer", download.contentAsString)
+        assertEquals("application/octet-stream", download.contentType)
+        upload("GRADE", solutionId, student, 403)
+        mvc.perform(delete("$base/files/$fileId?$params").with(auth(student))).andExpect(status().isForbidden)
+        for (author in listOf(outsider, createUser(UserRole.TEACHER))) {
+            mvc.perform(get("$base/files?$params").with(auth(author))).andExpect(status().isNotFound)
+            mvc.perform(get("$base/files/$fileId?$params").with(auth(author))).andExpect(status().isNotFound)
+            upload("GRADE", solutionId, author, 404)
+        }
+        mvc.perform(get("/api/courses/$otherCourseId/files/$fileId?$params").with(auth(teacher)))
+            .andExpect(status().isNotFound)
+        mvc.perform(get("$base/files/$fileId?ownerType=SOLUTION&ownerId=$solutionId").with(auth(student)))
+            .andExpect(status().isNotFound)
+        mvc.perform(get("$base/files/$fileId?$params")).andExpect(status().isUnauthorized)
+        write("PUT", "$base/solutions/$solutionId/grade", teacher, """{"grade":true}""", 200)
+        assertEquals(fileId, read("$base/files?$params", student)[0]["id"].asLong())
+        val admin = createUser(UserRole.ADMIN)
+        upload("GRADE", solutionId, admin)
+        mvc.perform(delete("$base/files/$fileId?$params").with(auth(admin))).andExpect(status().isNoContent)
+        assertEquals(0, count("SELECT COUNT(*) FROM course_files WHERE id = $fileId"))
+        val remaining = read("$base/files?$params", student)[0]["id"].asLong()
+        mvc.perform(delete("$base/tasks/$taskId").with(auth(teacher))).andExpect(status().isNoContent)
+        assertEquals(0, count("SELECT COUNT(*) FROM grade_files WHERE solution_id = $solutionId"))
+        assertEquals(0, count("SELECT COUNT(*) FROM course_files WHERE id = $remaining"))
+    }
+
+    @Test
+    fun `lesson deletion cleans grade files and preserves files referenced by another grade`() {
+        val firstLesson = createLesson()["id"].asLong()
+        val firstSolution = createSolution(createTask(firstLesson))
+        val secondSolution = createSolution(createTask(createLesson()["id"].asLong()))
+        for (id in listOf(firstSolution, secondSolution)) {
+            write("PUT", "$base/solutions/$id/grade", teacher, """{"grade":true}""", 200)
+        }
+        val shared = upload("GRADE", firstSolution, teacher)["id"].asLong()
+        val unshared = upload("GRADE", firstSolution, teacher)["id"].asLong()
+        jdbc.update("INSERT INTO grade_files (solution_id, file_id) VALUES (?, ?)", secondSolution, shared)
+        mvc.perform(delete("$base/lessons/$firstLesson").with(auth(teacher))).andExpect(status().isNoContent)
+        assertEquals(0, count("SELECT COUNT(*) FROM grade_files WHERE solution_id = $firstSolution"))
+        assertEquals(0, count("SELECT COUNT(*) FROM course_files WHERE id = $unshared"))
+        assertEquals(shared, read("$base/files?ownerType=GRADE&ownerId=$secondSolution", student)[0]["id"].asLong())
+        mvc.perform(delete("$base/files/$shared?ownerType=GRADE&ownerId=$secondSolution").with(auth(teacher)))
+            .andExpect(status().isNoContent)
+        assertEquals(0, count("SELECT COUNT(*) FROM course_files WHERE id = $shared"))
+    }
+
     private fun createLesson(): JsonNode =
         write("POST", "$base/lessons", teacher, lessonJson(), 201)
 

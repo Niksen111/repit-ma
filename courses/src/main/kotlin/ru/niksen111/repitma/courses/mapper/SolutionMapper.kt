@@ -31,4 +31,9 @@ interface SolutionMapper {
 
     fun findFiles(@Param("solutionId") solutionId: Long): List<FileResponse>
 
+    fun attachGradeFile(@Param("solutionId") solutionId: Long, @Param("fileId") fileId: Long): Int
+    fun detachGradeFile(@Param("solutionId") solutionId: Long, @Param("fileId") fileId: Long): Int
+    fun containsGradeFile(@Param("solutionId") solutionId: Long, @Param("fileId") fileId: Long): Boolean
+    fun findGradeFiles(@Param("solutionId") solutionId: Long): List<FileResponse>
+
 }

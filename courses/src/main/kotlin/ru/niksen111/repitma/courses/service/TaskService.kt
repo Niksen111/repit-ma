@@ -1,10 +1,13 @@
 package ru.niksen111.repitma.courses.service
 
 import org.springframework.stereotype.Service
+import org.springframework.http.HttpStatus
+import org.springframework.web.server.ResponseStatusException
 import org.springframework.transaction.annotation.Transactional
 import ru.niksen111.repitma.courses.dto.FileOwnerType
 import ru.niksen111.repitma.courses.dto.TaskRequest
 import ru.niksen111.repitma.courses.dto.TaskResponse
+import ru.niksen111.repitma.courses.dto.TaskCompletionRequest
 import ru.niksen111.repitma.courses.dto.toResponse
 import ru.niksen111.repitma.courses.entity.Task
 import ru.niksen111.repitma.courses.mapper.SolutionMapper
@@ -58,12 +61,25 @@ class TaskService(
     }
 
     @Transactional
+    fun complete(username: String, courseId: Long, taskId: Long, request: TaskCompletionRequest): TaskResponse {
+        access.requireReader(username, courseId)
+        val task = access.task(courseId, taskId)
+        if (solutionMapper.findByTask(taskId) != null) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "У задания уже есть решение. Используйте его статус и оценку.")
+        }
+        val completed = requireNotNull(request.completed)
+        taskMapper.updateCompletion(taskId, completed)
+        return task.copy(completed = completed).toResponse()
+    }
+
+    @Transactional
     fun delete(username: String, courseId: Long, taskId: Long) {
         access.requireTeacher(username, courseId)
         access.task(courseId, taskId)
         solutionMapper.findByTask(taskId)?.let { solution ->
             val solutionId = requireNotNull(solution.id)
             fileService.deleteAttachments(FileOwnerType.SOLUTION, solutionId)
+            fileService.deleteAttachments(FileOwnerType.GRADE, solutionId)
             solutionMapper.delete(solutionId)
         }
         fileService.deleteAttachments(FileOwnerType.TASK, taskId)

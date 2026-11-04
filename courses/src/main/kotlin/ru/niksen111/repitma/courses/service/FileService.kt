@@ -37,6 +37,7 @@ class FileService(
             FileOwnerType.RECEIPT -> lessonMapper.findReceipts(ownerId)
             FileOwnerType.TASK -> taskMapper.findFiles(ownerId)
             FileOwnerType.SOLUTION -> solutionMapper.findFiles(ownerId)
+            FileOwnerType.GRADE -> solutionMapper.findGradeFiles(ownerId)
         }
     }
 
@@ -67,6 +68,7 @@ class FileService(
             FileOwnerType.RECEIPT -> lessonMapper.attachReceipt(ownerId, fileId)
             FileOwnerType.TASK -> taskMapper.attachFile(ownerId, fileId)
             FileOwnerType.SOLUTION -> solutionMapper.attachFile(ownerId, fileId)
+            FileOwnerType.GRADE -> solutionMapper.attachGradeFile(ownerId, fileId)
         }
         return FileResponse(fileId, file.originalName, file.contentType)
     }
@@ -106,6 +108,7 @@ class FileService(
             FileOwnerType.RECEIPT -> lessonMapper.findReceipts(ownerId)
             FileOwnerType.TASK -> taskMapper.findFiles(ownerId)
             FileOwnerType.SOLUTION -> solutionMapper.findFiles(ownerId)
+            FileOwnerType.GRADE -> solutionMapper.findGradeFiles(ownerId)
         }
         for (file in files) {
             detach(type, ownerId, file.id)
@@ -119,6 +122,7 @@ class FileService(
             FileOwnerType.RECEIPT -> lessonMapper.detachReceipt(ownerId, fileId)
             FileOwnerType.TASK -> taskMapper.detachFile(ownerId, fileId)
             FileOwnerType.SOLUTION -> solutionMapper.detachFile(ownerId, fileId)
+            FileOwnerType.GRADE -> solutionMapper.detachGradeFile(ownerId, fileId)
         }
     }
 
@@ -137,6 +141,13 @@ class FileService(
                 access.requireTeacher(username, courseId)
                 access.task(courseId, ownerId)
             }
+            FileOwnerType.GRADE -> {
+                access.requireTeacher(username, courseId)
+                val solution = access.solution(courseId, ownerId)
+                if (solution.grade == null) {
+                    throw ResponseStatusException(HttpStatus.CONFLICT, "Сначала сохраните оценку решения")
+                }
+            }
             FileOwnerType.SOLUTION -> {
                 access.requireStudent(username, courseId)
                 val solution = access.solution(courseId, ownerId)
@@ -154,7 +165,7 @@ class FileService(
         when (type) {
             FileOwnerType.LESSON, FileOwnerType.RECEIPT -> access.lesson(courseId, ownerId)
             FileOwnerType.TASK -> access.task(courseId, ownerId)
-            FileOwnerType.SOLUTION -> access.solution(courseId, ownerId)
+            FileOwnerType.SOLUTION, FileOwnerType.GRADE -> access.solution(courseId, ownerId)
         }
     }
 
@@ -164,6 +175,7 @@ class FileService(
             FileOwnerType.RECEIPT -> lessonMapper.containsReceipt(ownerId, fileId)
             FileOwnerType.TASK -> taskMapper.containsFile(ownerId, fileId)
             FileOwnerType.SOLUTION -> solutionMapper.containsFile(ownerId, fileId)
+            FileOwnerType.GRADE -> solutionMapper.containsGradeFile(ownerId, fileId)
         }
         if (!attached) {
             throw ResponseStatusException(HttpStatus.NOT_FOUND)

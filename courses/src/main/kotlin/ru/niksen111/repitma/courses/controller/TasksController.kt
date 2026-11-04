@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import ru.niksen111.repitma.courses.dto.TaskRequest
 import ru.niksen111.repitma.courses.dto.TaskResponse
+import ru.niksen111.repitma.courses.dto.TaskCompletionRequest
 import ru.niksen111.repitma.courses.service.TaskService
 import ru.niksen111.repitma.users.security.CurrentUsername
 
@@ -46,6 +47,14 @@ class TasksController(
         @PathVariable taskId: Long,
         @Valid @RequestBody request: TaskRequest,
     ): TaskResponse = taskService.update(username, courseId, taskId, request)
+
+    @PutMapping("/tasks/{taskId}/completion")
+    fun complete(
+        @CurrentUsername username: String,
+        @PathVariable courseId: Long,
+        @PathVariable taskId: Long,
+        @Valid @RequestBody request: TaskCompletionRequest,
+    ): TaskResponse = taskService.complete(username, courseId, taskId, request)
 
     @DeleteMapping("/tasks/{taskId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
