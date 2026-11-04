@@ -16,7 +16,7 @@ export async function previewFile(api: CourseApi, type: OwnerType, ownerId: numb
   if (!contentType) return
   const trigger = document.activeElement
   const dialog = document.createElement('dialog')
-  dialog.className = 'file-preview-dialog'
+  dialog.className = contentType === 'application/pdf' ? 'file-preview-dialog file-preview-pdf' : 'file-preview-dialog'
   dialog.setAttribute('aria-label', `Предпросмотр: ${file.originalName}`)
   dialog.innerHTML = '<header class="file-preview-header"><h2></h2><button type="button" class="secondary-button" autofocus>Закрыть</button></header><p class="status" role="status">Загрузка файла…</p><div class="file-preview-content"></div><footer class="file-preview-footer" hidden><a class="secondary-button" data-preview-download>Скачать</a><a class="secondary-button" data-preview-open target="_blank" rel="noopener noreferrer">Открыть в новой вкладке</a><p class="muted">Если PDF не отображается в браузере, откройте его в новой вкладке или скачайте.</p></footer>'
   dialog.querySelector('h2')!.textContent = file.originalName
