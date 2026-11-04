@@ -12,8 +12,9 @@ test('Ratings only belong to platform reviews', () => {
   }
 })
 
-test('Login returns to review contact only for the allowed route', () => {
+test('Login returns only to explicitly allowed routes', () => {
   assert.equal(reviewLoginDestination('?next=%2Freviews%2Fnew'), '/reviews/new')
+  assert.equal(reviewLoginDestination('?next=%2Fhomework'), '/homework')
   for (const search of ['', '?next=https://example.com', '?next=//example.com', '?next=/students']) {
     assert.equal(reviewLoginDestination(search), '/account')
   }

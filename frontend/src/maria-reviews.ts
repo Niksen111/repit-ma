@@ -64,5 +64,6 @@ export const mariaReviews: readonly Review[] = [
 ]
 
 export function reviewLoginDestination(search: string): string {
-  return new URLSearchParams(search).get('next') === '/reviews/new' ? '/reviews/new' : '/account'
+  const next = new URLSearchParams(search).get('next')
+  return next === '/reviews/new' || next === '/homework' ? next : '/account'
 }

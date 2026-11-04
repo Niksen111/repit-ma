@@ -7,6 +7,7 @@ import { renderEgorHome } from './egor-home.ts'
 import { mountCourseLearning } from './course-learning.ts'
 import { mountTeacherSchedule } from './teacher-schedule.ts'
 import { mountTeacherCalendar } from './teacher-calendar.ts'
+import { mountHomework } from './homework.ts'
 import { mountTeacherNote } from './teacher-note.ts'
 import { mountLessonScheduling } from './recurring-lessons.ts'
 import { getCourse, getCourses, getProfile, getTeachers, login, logout, register, updateProfile, type CourseSummary, type Profile, type TeacherSummary, type UserRole } from './auth-api.ts'
@@ -26,7 +27,7 @@ function header(profile: Profile | null): string {
   const learningLink = profile?.role === 'STUDENT' ? '<a href="/learning">Обучение</a>' : ''
   const scheduleLink = profile?.role === 'TEACHER' || profile?.role === 'ADMIN' ? '<a href="/calendar">Календарь</a><a href="/schedule">Расписание</a>' : ''
   const links = profile
-    ? `<a href="/">Главная</a>${studentsLink}${learningLink}${scheduleLink}${registrationLink}<a href="/account">Аккаунт</a><button id="logout" type="button">Выйти</button>`
+    ? `<a href="/">Главная</a>${studentsLink}${learningLink}${scheduleLink}<a href="/homework">Домашние задания</a>${registrationLink}<a href="/account">Аккаунт</a><button id="logout" type="button">Выйти</button>`
     : '<a href="/">Главная</a><a class="login-link" href="/login">Войти</a>'
   return `<header class="site-header"><a class="logo" href="/">repit<span>ma</span></a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-navigation" aria-label="Открыть меню"><span></span><span></span><span></span></button><nav id="main-navigation" aria-label="Основная навигация">${links}</nav></header>`
 }
@@ -398,6 +399,18 @@ async function start(): Promise<void> {
     }
     const courses = await getCourses().catch(() => [])
     renderStudents(profile, courses)
+    return
+  }
+  if (path === '/homework') {
+    if (!profile) {
+      window.location.href = '/login?next=%2Fhomework'
+      return
+    }
+    const teacher = profile.role !== 'STUDENT'
+    document.title = 'Домашние задания — Repitma'
+    app.innerHTML = `${header(profile)}<main><section class="students-page homework-page"><p class="eyebrow">${teacher ? 'Проверка решений' : 'Самостоятельная работа'}</p><h1>Домашние задания</h1><p class="muted">${teacher ? 'Решения учеников, которые ожидают вашей проверки.' : 'Задания, для которых вы ещё не отправили решение.'}</p><div id="homework"></div></section></main>${footer()}`
+    bindHeader()
+    mountHomework(document.querySelector<HTMLElement>('#homework')!, profile)
     return
   }
   if (path === '/calendar' || path === '/schedule') {

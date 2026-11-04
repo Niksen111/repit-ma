@@ -530,6 +530,74 @@ class CourseLearningTests(
         assertEquals(0, count("SELECT COUNT(*) FROM course_files WHERE id = $secondReceipt"))
     }
 
+    @Test
+    fun `homework queues follow submission grading and deletion`() {
+        assertEquals(0, read("/api/homework", student).size())
+        assertEquals(0, read("/api/homework", teacher).size())
+        val lessonId = createLesson()["id"].asLong()
+        val firstTask = createTask(lessonId)
+        val secondTask = createTask(lessonId)
+        val thirdTask = createTask(lessonId)
+        val pending = read("/api/homework", student)
+        assertEquals(listOf(firstTask, secondTask, thirdTask), pending.toList().map { it["taskId"].asLong() })
+        assertEquals(courseId, pending[0]["courseId"].asLong())
+        assertEquals(lessonId, pending[0]["lessonId"].asLong())
+        assertEquals("Алгебра", pending[0]["lessonTitle"].asString())
+        assertEquals("Уравнения", pending[0]["taskTitle"].asString())
+        assertEquals("2026-09-26T15:00:00", pending[0]["scheduledAt"].asString())
+        assertTrue(pending[0]["description"].isNull)
+        assertTrue(pending[0]["studentName"].isNull)
+        assertEquals(student.username, pending[0]["studentUsername"].asString())
+        assertEquals(teacher.username, pending[0]["teacherUsername"].asString())
+        assertEquals(0, read("/api/homework", teacher).size())
+
+        val firstSolution = createSolution(firstTask)
+        val secondSolution = createSolution(secondTask)
+        assertEquals(listOf(thirdTask), read("/api/homework", student).toList().map { it["taskId"].asLong() })
+        assertEquals(listOf(firstTask, secondTask), read("/api/homework", teacher).toList().map { it["taskId"].asLong() })
+        write("PUT", "$base/solutions/$firstSolution/grade", teacher, """{"grade":true}""", 200)
+        write("PUT", "$base/solutions/$secondSolution/grade", teacher, """{"grade":false}""", 200)
+        assertEquals(0, read("/api/homework", teacher).size())
+        assertEquals(listOf(thirdTask), read("/api/homework", student).toList().map { it["taskId"].asLong() })
+
+        mvc.perform(delete("$base/tasks/$thirdTask").with(auth(teacher))).andExpect(status().isNoContent)
+        assertEquals(0, read("/api/homework", student).size())
+        val anotherTask = createTask(lessonId)
+        createSolution(anotherTask)
+        mvc.perform(delete("$base/lessons/$lessonId").with(auth(teacher))).andExpect(status().isNoContent)
+        assertEquals(0, read("/api/homework", teacher).size())
+        mvc.perform(get("/api/homework")).andExpect(status().isUnauthorized)
+    }
+
+    @Test
+    fun `homework queues isolate participants across courses and include all courses for admin`() {
+        val ownTask = createTask(createLesson()["id"].asLong())
+        val otherTeacher = createUser(UserRole.TEACHER)
+        courses.insert(requireNotNull(otherTeacher.id), requireNotNull(student.id), "2025/26")
+        val secondCourse = courses.findForUser(requireNotNull(otherTeacher.id)).single().id
+        val secondBase = "/api/courses/$secondCourse"
+        val earlierLesson = write("POST", "$secondBase/lessons", otherTeacher,
+            """{"title":"Геометрия","scheduledAt":"2025-10-01T12:00"}""", 201)["id"].asLong()
+        val otherTask = write("POST", "$secondBase/lessons/$earlierLesson/tasks", otherTeacher,
+            """{"title":"Треугольники","description":"Задачи из учебника"}""", 201)["id"].asLong()
+        val siblingLesson = write("POST", "/api/courses/$otherCourseId/lessons", teacher, lessonJson(), 201)["id"].asLong()
+        val siblingTask = write("POST", "/api/courses/$otherCourseId/lessons/$siblingLesson/tasks", teacher,
+            """{"title":"Другое задание"}""", 201)["id"].asLong()
+
+        assertEquals(listOf(otherTask, ownTask), read("/api/homework", student).toList().map { it["taskId"].asLong() })
+        assertEquals(listOf(siblingTask), read("/api/homework", outsider).toList().map { it["taskId"].asLong() })
+        assertEquals("Задачи из учебника", read("/api/homework", student)[0]["description"].asString())
+        createSolution(ownTask)
+        write("POST", "$secondBase/tasks/$otherTask/solution", student, "{}", 201)
+        write("POST", "/api/courses/$otherCourseId/tasks/$siblingTask/solution", outsider, "{}", 201)
+        assertEquals(listOf(ownTask, siblingTask), read("/api/homework", teacher).toList().map { it["taskId"].asLong() })
+        assertEquals(listOf(otherTask), read("/api/homework", otherTeacher).toList().map { it["taskId"].asLong() })
+        assertEquals(0, read("/api/homework", createUser(UserRole.TEACHER)).size())
+        assertEquals(0, read("/api/homework", createUser(UserRole.STUDENT)).size())
+        val adminTasks = read("/api/homework", createUser(UserRole.ADMIN)).toList().map { it["taskId"].asLong() }
+        assertTrue(adminTasks.containsAll(listOf(ownTask, siblingTask, otherTask)))
+    }
+
     private fun createLesson(): JsonNode =
         write("POST", "$base/lessons", teacher, lessonJson(), 201)
 

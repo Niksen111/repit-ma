@@ -16,6 +16,7 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
   let selected: number | null = Number(new URLSearchParams(window.location.search).get('lesson')) || null
   let page = 1
   let revision = 0
+  let pendingTask = Number(new URLSearchParams(window.location.search).get('task')) || null
 
   root.innerHTML = `<div class="materials-heading"><h2>Занятия</h2></div><div class="lesson-navigation"><details class="lesson-picker" id="lesson-picker"><summary>Выбрать занятие <span data-lesson-count></span></summary><div id="lesson-list"></div></details>${teacher ? '<details class="lesson-scheduling-picker"><summary>Расписание и новые занятия</summary><section class="course-scheduling" data-course-scheduling></section></details>' : ''}</div><p class="status" id="learning-message" role="status"></p><div id="lesson-detail" tabindex="-1" aria-live="polite"></div><dialog class="material-dialog"><form id="material-editor"><h2></h2><div id="editor-fields"></div><p class="status error" role="status"></p><div class="form-actions"><button class="primary-button" type="submit">Сохранить</button><button class="secondary-button" type="button" id="close-editor">Отмена</button></div></form></dialog>`
   const picker = root.querySelector<HTMLDetailsElement>('#lesson-picker')!
@@ -220,6 +221,15 @@ export function mountCourseLearning(root: HTMLElement, profile: Profile, courseI
           if (failures.length) report(new Error(`Не удалось загрузить: ${failures.join('; ')}. Остальные файлы сохранены.`))
         })
       })
+      if (pendingTask !== null) {
+        const taskCard = detail.querySelector<HTMLElement>(`[data-task="${pendingTask}"]`)
+        if (taskCard) {
+          taskCard.tabIndex = -1
+          taskCard.focus({ preventScroll: true })
+          taskCard.scrollIntoView({ block: 'start' })
+        }
+        pendingTask = null
+      }
     } catch (error) {
       if (version !== revision) return
       detail.innerHTML = '<p class="status error" role="status"></p><button class="secondary-button" type="button">Повторить загрузку занятия</button>'
