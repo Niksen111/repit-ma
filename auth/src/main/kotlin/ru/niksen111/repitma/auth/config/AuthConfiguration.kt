@@ -20,7 +20,7 @@ class AuthConfiguration {
         .csrf { it.disable() }
         .authorizeHttpRequests {
             it.requestMatchers(
-                "/", "/index.html", "/login", "/register", "/account", "/privacy",
+                "/", "/index.html", "/login", "/register", "/account", "/privacy", "/about",
                 "/students", "/learning", "/courses/*", "/reviews/new", "/schedule", "/calendar", "/homework",
                 "/assets/**", "/images/**", "/favicon.png", "/api/public/site", "/error",
             ).permitAll()

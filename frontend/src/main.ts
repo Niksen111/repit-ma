@@ -1,4 +1,5 @@
 import './styles.css'
+import './about.css'
 import './easter-eggs.css'
 import { mountEasterEggs } from './easter-eggs.ts'
 import { mariaReviews, reviewLoginDestination } from './maria-reviews.ts'
@@ -6,6 +7,7 @@ import { mountReviews, renderReviews } from './reviews.ts'
 import { getTeacherSite, renderTeacherContacts, teacherSites, type TeacherSite } from './teacher-site.ts'
 import { renderOlgaHome } from './olga-home.ts'
 import { renderEgorHome } from './egor-home.ts'
+import { renderAbout } from './about.ts'
 import { mountCourseLearning } from './course-learning.ts'
 import { mountTeacherSchedule } from './teacher-schedule.ts'
 import { mountTeacherCalendar } from './teacher-calendar.ts'
@@ -35,7 +37,7 @@ function header(profile: Profile | null): string {
 }
 
 function footer(): string {
-  return '<footer><a class="logo" href="/">repit<span>ma</span></a><div class="footer-meta"><a href="/privacy">Политика конфиденциальности</a><p><button class="footer-surprise" type="button" data-math-party>© 2026 Repitma</button></p></div></footer>'
+  return '<footer><a class="logo" href="/">repit<span>ma</span></a><div class="footer-meta"><a href="/privacy">Политика конфиденциальности</a><a href="/about">О проекте</a><p><button class="footer-surprise" type="button" data-math-party>© 2026 Repitma</button></p></div></footer>'
 }
 
 function escapeHtml(value: string | null): string {
@@ -363,6 +365,12 @@ async function start(): Promise<void> {
   }
   if (path === '/privacy') {
     renderPrivacy(profile)
+    return
+  }
+  if (path === '/about') {
+    document.title = 'О проекте — Repitma'
+    app.innerHTML = `${header(profile)}${renderAbout()}${footer()}`
+    bindHeader()
     return
   }
   if (path === '/login') {
