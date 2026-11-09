@@ -155,7 +155,7 @@ h1 { max-width: 850px; margin: 0; font: 700 clamp(44px, 7vw, 86px)/1.03 Unbounde
 .approach-copy { display: grid; gap: 18px; }
 footer { min-height: 92px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-top: 1px solid #38453e55; }
 footer p { margin: 0; font-size: 13px; opacity: .6; }
-.footer-meta { display: flex; align-items: center; gap: 24px; font-size: 13px; }
+.footer-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; font-size: 13px; }
 .footer-meta a { text-decoration: underline; text-underline-offset: 3px; }
 .account h1, .auth-card h1 { font-size: clamp(38px, 6vw, 68px); }
 dl { max-width: 580px; margin: 48px 0 0; }

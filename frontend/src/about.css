@@ -1,0 +1,35 @@
+.about-page { min-width: 0; align-content: start; }
+.about-intro { padding-top: 72px; padding-bottom: 64px; }
+.about-intro h1 { font-size: clamp(36px, 6vw, 68px); }
+.about-intro .teacher-lead { max-width: 760px; }
+.about-features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 40px; margin: 44px 0 0; padding: 0; list-style: none; }
+.about-features li { padding-top: 20px; border-top: 1px solid #38453e33; }
+.about-features h2 { margin: 0; font-size: 18px; line-height: 1.5; }
+.about-features p, .about-teacher-copy > p:not(.eyebrow) { margin: 12px 0 0; color: #66706a; font-size: 15px; line-height: 1.75; }
+.about-teachers { padding-top: 40px; padding-bottom: 96px; }
+.about-teachers .section-title { grid-template-columns: 1fr; gap: 16px; margin-bottom: 20px; }
+.about-teachers-lead { max-width: 650px; margin: 0 0 32px; color: #66706a; font-size: 16px; line-height: 1.75; }
+.about-teacher-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.about-teacher-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid #38453e33; border-radius: 24px; background: #edf1e9; }
+.about-teacher-photo { aspect-ratio: 4 / 3; overflow: hidden; }
+.about-teacher-photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 35%; }
+.about-teacher-photo-egor img { transform: scale(1.65); transform-origin: 48% 68%; }
+.about-teacher-copy { display: flex; flex: 1; flex-direction: column; align-items: start; padding: 24px; }
+.about-teacher-copy .eyebrow { margin-bottom: 12px; color: var(--accent); }
+.about-teacher-copy h3 { margin: 0; font-size: 22px; line-height: 1.4; }
+.about-teacher-copy .primary-button { display: inline-flex; align-items: center; gap: 8px; margin-top: auto; }
+.about-teacher-copy > p:not(.eyebrow) { margin-bottom: 28px; }
+.about-teacher-copy .primary-button:hover { background: #234c3e; }
+@media (max-width: 960px) {
+  .about-teacher-grid { grid-template-columns: 1fr; }
+  .about-teacher-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); }
+  .about-teacher-photo { aspect-ratio: auto; min-height: 280px; }
+}
+@media (max-width: 560px) {
+  .about-intro { padding-top: 48px; padding-bottom: 32px; }
+  .about-features { grid-template-columns: 1fr; gap: 20px; margin-top: 32px; }
+  .about-teachers { padding-top: 32px; padding-bottom: 64px; }
+  .about-teacher-card { display: flex; }
+  .about-teacher-photo { aspect-ratio: 4 / 3; min-height: 0; }
+  .about-teacher-copy { padding: 24px 20px; }
+}
