@@ -2,7 +2,8 @@ import './styles.css'
 import './about.css'
 import './easter-eggs.css'
 import { mountEasterEggs } from './easter-eggs.ts'
-import { mariaReviews, reviewLoginDestination } from './maria-reviews.ts'
+import { mariaReviews } from './maria-reviews.ts'
+import { coursePathPattern, loginDestination, requiresLogin } from './login-redirect.ts'
 import { mountReviews, renderReviews } from './reviews.ts'
 import { getTeacherSite, renderTeacherContacts, teacherSites, type TeacherSite } from './teacher-site.ts'
 import { renderOlgaHome } from './olga-home.ts'
@@ -183,7 +184,7 @@ function renderLogin(): void {
       button.disabled = true
       message.textContent = ''
       await login(username, password)
-      window.location.href = reviewLoginDestination(window.location.search)
+      window.location.replace(loginDestination(window.location.search))
     } catch (error) {
       message.className = 'status error'
       message.textContent = error instanceof Error ? error.message : 'Произошла ошибка'
@@ -343,7 +344,8 @@ function renderLearning(profile: Profile, courses: CourseSummary[]): void {
 }
 
 async function start(): Promise<void> {
-  const path = window.location.pathname.replace(/\/$/, '') || '/'
+  const { pathname, search, hash } = window.location
+  const path = pathname.replace(/\/$/, '') || '/'
   let profile: Profile | null
   try {
     const result = await Promise.all([getTeacherSite(window.location.hostname), getProfile().catch(() => null)])
@@ -353,14 +355,6 @@ async function start(): Promise<void> {
     document.title = 'Страница временно недоступна — Repitma'
     app.innerHTML = `${header(null)}<main><section class="account"><h1>Страница временно недоступна</h1><p class="teacher-lead">Не удалось загрузить данные преподавателя. Попробуйте обновить страницу.</p><a class="primary-button" href="${escapeHtml(window.location.pathname)}">Повторить</a></section></main>${footer()}`
     bindHeader()
-    return
-  }
-  if (path === '/reviews/new') {
-    if (!profile) {
-      window.location.href = '/login?next=%2Freviews%2Fnew'
-      return
-    }
-    renderReviewContact(profile)
     return
   }
   if (path === '/privacy') {
@@ -375,17 +369,26 @@ async function start(): Promise<void> {
   }
   if (path === '/login') {
     if (profile) {
-      window.location.href = reviewLoginDestination(window.location.search)
+      window.location.replace(loginDestination(search))
       return
     }
     renderLogin()
     return
   }
-  if (path === '/register') {
-    if (!profile) {
-      window.location.href = '/login'
-      return
+  if (!profile) {
+    if (requiresLogin(path)) {
+      const params = new URLSearchParams({ next: pathname + search + hash })
+      window.location.replace(`/login?${params}`)
+    } else {
+      renderHome(null)
     }
+    return
+  }
+  if (path === '/reviews/new') {
+    renderReviewContact(profile)
+    return
+  }
+  if (path === '/register') {
     if (profile.role !== 'ADMIN' && profile.role !== 'TEACHER') {
       window.location.href = '/account'
       return
@@ -403,8 +406,8 @@ async function start(): Promise<void> {
     return
   }
   if (path === '/students') {
-    if (!profile || (profile.role !== 'TEACHER' && profile.role !== 'ADMIN')) {
-      window.location.href = profile ? '/account' : '/login'
+    if (profile.role !== 'TEACHER' && profile.role !== 'ADMIN') {
+      window.location.href = '/account'
       return
     }
     const courses = await getCourses().catch(() => [])
@@ -412,10 +415,6 @@ async function start(): Promise<void> {
     return
   }
   if (path === '/homework') {
-    if (!profile) {
-      window.location.href = '/login?next=%2Fhomework'
-      return
-    }
     const teacher = profile.role !== 'STUDENT'
     document.title = 'Домашние задания — Repitma'
     app.innerHTML = `${header(profile)}<main><section class="students-page homework-page"><p class="eyebrow">${teacher ? 'Проверка решений' : 'Самостоятельная работа'}</p><h1>Домашние задания</h1><p class="muted">${teacher ? 'Решения учеников, которые ожидают вашей проверки.' : 'Задания, для которых вы ещё не отправили решение.'}</p><div id="homework"></div></section></main>${footer()}`
@@ -424,8 +423,8 @@ async function start(): Promise<void> {
     return
   }
   if (path === '/calendar' || path === '/schedule') {
-    if (!profile || (profile.role !== 'TEACHER' && profile.role !== 'ADMIN')) {
-      window.location.href = profile ? '/account' : '/login'
+    if (profile.role !== 'TEACHER' && profile.role !== 'ADMIN') {
+      window.location.href = '/account'
       return
     }
     const calendar = path === '/calendar'
@@ -438,8 +437,8 @@ async function start(): Promise<void> {
     return
   }
   if (path === '/learning') {
-    if (!profile || profile.role !== 'STUDENT') {
-      window.location.href = profile ? '/account' : '/login'
+    if (profile.role !== 'STUDENT') {
+      window.location.href = '/account'
       return
     }
     const courses = await getCourses().catch(() => [])
@@ -450,12 +449,8 @@ async function start(): Promise<void> {
     renderLearning(profile, courses)
     return
   }
-  const courseMatch = path.match(/^\/courses\/(\d+)$/)
+  const courseMatch = path.match(coursePathPattern)
   if (courseMatch) {
-    if (!profile) {
-      window.location.href = profile ? '/account' : '/login'
-      return
-    }
     const course = await getCourse(Number(courseMatch[1])).catch(() => null)
     if (!course) {
       window.location.href = profile.role === 'STUDENT' ? '/learning' : '/students'
@@ -465,10 +460,6 @@ async function start(): Promise<void> {
     return
   }
   if (path === '/account') {
-    if (!profile) {
-      window.location.href = '/login'
-      return
-    }
     renderAccount(profile)
     return
   }

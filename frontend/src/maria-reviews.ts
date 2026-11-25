@@ -62,8 +62,3 @@ export const mariaReviews: readonly Review[] = [
     source: 'Отзыв с другой площадки',
   },
 ]
-
-export function reviewLoginDestination(search: string): string {
-  const next = new URLSearchParams(search).get('next')
-  return next === '/reviews/new' || next === '/homework' ? next : '/account'
-}
